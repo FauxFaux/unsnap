@@ -1,6 +1,7 @@
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub server: Server,
+    pub keys: Keys,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -19,4 +20,9 @@ pub struct Server {
 
 fn default_port() -> u16 {
     6697
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Keys {
+    pub imgur_client_id: String,
 }

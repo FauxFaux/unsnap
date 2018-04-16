@@ -1,5 +1,3 @@
-use std::ascii::AsciiExt;
-
 use errors::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

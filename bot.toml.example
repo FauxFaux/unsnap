@@ -2,3 +2,7 @@
 hostname = "irc.freenode.net"
 nick = "unsnap"
 channels = ["#unsnap"]
+
+[keys]
+imgur_client_id = "ababa"
+imgur_client_secret = "ababa"

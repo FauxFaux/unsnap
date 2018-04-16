@@ -1,9 +1,17 @@
 #[macro_use]
 extern crate error_chain;
+#[macro_use]
+extern crate hyper;
+
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
+extern crate number_prefix;
 extern crate reqwest;
 extern crate rustls;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate toml;
 extern crate webpki;
 extern crate webpki_roots;
@@ -13,11 +21,14 @@ mod config;
 mod errors;
 mod files;
 mod parse;
+mod titles;
+mod webs;
 
 use errors::*;
 use parse::Command;
 use parse::Ident;
 use parse::Targeted;
+use webs::Webs;
 
 quick_main!(run);
 
@@ -31,6 +42,7 @@ fn run() -> Result<()> {
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
 
     let mut state = State::Connecting;
+    let mut webs = webs::Internet::new(&config);
 
     let mut conn = comms::Comm::connect(&config.server.hostname, config.server.port)?;
     conn.write_line(format!(
@@ -63,7 +75,7 @@ fn run() -> Result<()> {
                 }
             }
             Command::PrivMsg(Targeted { dest, msg }) => {
-                process_msg(&parsed.whom, dest, msg, |s| conn.write_line(s))?
+                process_msg(&mut webs, &parsed.whom, dest, msg, |s| conn.write_line(s))?
             }
             _ => (),
         }
@@ -72,10 +84,19 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn process_msg<F>(whom: &Ident, into: &str, msg: &str, mut write: F) -> Result<()>
+fn process_msg<F, W: Webs>(
+    webs: &mut W,
+    whom: &Ident,
+    into: &str,
+    msg: &str,
+    mut write: F,
+) -> Result<()>
 where
     F: FnMut(&str) -> Result<()>,
 {
-    write(&format!("PRIVMSG {} :{}: SHUT UP ABOUT {}", into, whom.nick(), msg))?;
+    for title in titles::titles_for(webs, msg) {
+        let title = title?;
+        write(&format!("NOTICE {} :{}: {}", into, whom.nick(), title))?;
+    }
     Ok(())
 }
