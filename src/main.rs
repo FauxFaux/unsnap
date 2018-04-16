@@ -1,6 +1,3 @@
-// trivial
-#![feature(ascii_ctype)]
-
 #[macro_use]
 extern crate error_chain;
 extern crate reqwest;

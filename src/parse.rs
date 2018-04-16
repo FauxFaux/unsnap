@@ -49,7 +49,7 @@ pub fn parse(line: &str) -> Result<Message> {
         "PING" => Command::Ping(line),
         "PRIVMSG" => Command::PrivMsg(Targeted::new(line)?),
         "NOTICE" => Command::Notice(Targeted::new(line)?),
-        other if other.is_ascii_digit() => Command::Numeric(other.parse()?, line),
+        other if is_ascii_digits(other) => Command::Numeric(other.parse()?, line),
         other => Command::Unknown(other, line),
     };
 
@@ -57,6 +57,10 @@ pub fn parse(line: &str) -> Result<Message> {
         whom: Ident { inner: ident },
         command,
     })
+}
+
+fn is_ascii_digits(s: &str) -> bool {
+    s.chars().all(|c| c.is_ascii_digit())
 }
 
 impl<'a> Targeted<'a> {
