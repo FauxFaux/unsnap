@@ -1,0 +1,14 @@
+[package]
+name = "unsnap"
+version = "0.1.0"
+authors = ["Chris West (Faux) <git@goeswhere.com>"]
+
+[dependencies]
+error-chain = "0.11"
+reqwest = "0.8"
+rustls = "0.12"
+serde = "1.0"
+serde_derive = "1.0"
+toml = "0.4"
+webpki = "0.18.0-alpha"
+webpki-roots = "0.14"

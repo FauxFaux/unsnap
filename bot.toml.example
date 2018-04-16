@@ -1,0 +1,4 @@
+[server]
+hostname = "irc.freenode.net"
+nick = "unsnap"
+channels = ["#unsnap"]
