@@ -7,6 +7,10 @@ pub fn image<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
     let resp = webs.imgur_get(&format!("image/{}", id))?;
     let data = resp.get("data").ok_or("missing data")?;
 
+    image_body(data, None)
+}
+
+fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String> {
     let mut title = format!(
         "{}×{}",
         data.get("width").ok_or("missing width")?,
@@ -37,12 +41,44 @@ pub fn image<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
     if let Some(post_title) = data.get("title").and_then(|s| s.as_str()) {
         title.push_str(" ፤ ");
         title.push_str(post_title)
+    } else if let Some(post_title) = title_hint {
+        title.push_str(" ፤ ");
+        title.push_str(post_title)
     } else if let Some(desc) = data.get("description").and_then(|s| s.as_str()) {
         title.push_str(" ፤ ");
         title.push_str(desc);
     }
 
     Ok(title)
+}
+
+pub fn gallery<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
+    let resp = webs.imgur_get(&format!("album/{}", id))?;
+    let data = resp.get("data").ok_or("missing data")?;
+
+    let gallery_title = data.get("title")
+        .and_then(|t| t.as_str())
+        .ok_or("missing title")?;
+
+    let count = data.get("images_count")
+        .and_then(|c| c.as_i64())
+        .ok_or("no image count")?;
+
+    if 1 == count {
+        if let Some(images) = data.get("images") {
+            let image = &images[0];
+            return Ok(format!(
+                "{} ፤ {}",
+                image
+                    .get("link")
+                    .and_then(|s| s.as_str())
+                    .ok_or("no link on embedded image")?,
+                image_body(image, Some(gallery_title))?
+            ));
+        }
+    }
+
+    unimplemented!()
 }
 
 fn preferred_size(data: &Value) -> Option<f64> {
@@ -122,11 +158,29 @@ mod tests {
         "success":true,"status":200}
     "##;
 
+    const SINGLE_IMAGE_ALBUM: &str = r##"
+        {"data":{"id":"rTV6u","title":"Branch manager and Assistant Branch manager",
+        "description":null,"datetime":1523747874,
+        "cover":"tUulJaV","cover_width":640,"cover_height":770,
+        "account_url":null,"account_id":null,"privacy":"hidden","layout":"blog",
+        "views":141192,"link":"https:\/\/imgur.com\/a\/rTV6u","favorite":false,"nsfw":null,
+        "section":null,"images_count":1,"in_gallery":true,"is_ad":false,
+        "images":[{
+            "id":"tUulJaV","title":null,"description":null,"datetime":1523747876,
+            "type":"image\/jpeg","animated":false,"width":640,"height":770,"size":89545,
+            "views":113562,"bandwidth":10168909290,"vote":null,"favorite":false,"nsfw":null,
+            "section":null,"account_url":null,"account_id":null,"is_ad":false,
+            "in_most_viral":false,"has_sound":false,"tags":[],"ad_type":0,"ad_url":"",
+            "in_gallery":false,"link":"https:\/\/i.imgur.com\/tUulJaV.jpg"}]},
+        "success":true,"status":200}
+    "##;
+
     struct ImgurTest;
 
     impl Webs for ImgurTest {
         fn imgur_get(&self, sub: &str) -> Result<Value> {
             Ok(match sub {
+                "album/rTV6u" => serde_json::from_str(SINGLE_IMAGE_ALBUM).unwrap(),
                 "image/TUgcjTQ" => serde_json::from_str(STRAIGHT_IMAGE).unwrap(),
                 "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
                 "image/SRup0KZ" => serde_json::from_str(VIDEO_WITH_DESCRIPTION).unwrap(),
@@ -154,8 +208,16 @@ mod tests {
         );
 
         assert_eq!(
-            "667x500 8.2MiB /r/awesomenature sfw ፤ #dolphinsandshit",
+            "667×500 8.2MiB /r/awesomenature sfw ፤ #dolphinsandshit",
             super::image(&mut ImgurTest {}, "SRup0KZ").unwrap()
+        );
+    }
+
+    #[test]
+    fn format_album() {
+        assert_eq!(
+            "https://i.imgur.com/tUulJaV.jpg ፤ 640×770 87.4KiB ?fw ፤ Branch manager and Assistant Branch manager",
+            super::gallery(&mut ImgurTest {}, "rTV6u").unwrap()
         );
     }
 }
