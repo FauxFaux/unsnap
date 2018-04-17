@@ -32,6 +32,11 @@ pub fn image<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
         None => "¿fw",
     });
 
+    if let Some(post_title) = data.get("title").and_then(|s| s.as_str()) {
+        title.push_str(" ፤ ");
+        title.push_str(post_title)
+    }
+
     Ok(title)
 }
 
@@ -73,12 +78,25 @@ mod tests {
         "success":true,"status":200}
     "#;
 
+    const IMAGE_WITH_TITLE: &str = r#"
+        {"data":{"id":"PmSOx4H",
+        "title":"My army is ready, we attack at nightfall",
+        "description":null,"datetime":1523954060,
+        "type":"image\/jpeg","animated":false,"width":720,"height":540,"size":33292,
+        "views":65040,"bandwidth":2165311680,"vote":null,"favorite":false,"nsfw":false,
+        "section":"pics","account_url":null,"account_id":null,"is_ad":false,
+        "in_most_viral":false,"has_sound":false,"tags":[],"ad_type":0,"ad_url":"",
+        "in_gallery":true,"link":"https:\/\/i.imgur.com\/PmSOx4H.jpg"},
+        "success":true,"status":200}
+    "#;
+
     struct ImgurTest;
 
     impl Webs for ImgurTest {
         fn imgur_get(&self, sub: &str) -> Result<Value> {
             Ok(match sub {
                 "image/TUgcjTQ" => serde_json::from_str(STRAIGHT_IMAGE).unwrap(),
+                "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
                 "image/zEG4ULo" => serde_json::from_str(IMAGE_WITH_SECTION).unwrap(),
                 other => unimplemented!(),
             })
@@ -95,6 +113,11 @@ mod tests {
         assert_eq!(
             "640×799 97.2KiB /r/pics sfw",
             super::image(&mut ImgurTest {}, "zEG4ULo").unwrap()
+        );
+
+        assert_eq!(
+            "720×540 32.5KiB /r/pics sfw ፤ My army is ready, we attack at nightfall",
+            super::image(&mut ImgurTest {}, "PmSOx4H").unwrap()
         );
     }
 }
