@@ -7,6 +7,7 @@ use serde_json::Value;
 use config::Config;
 use errors::*;
 
+// This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value>;
 }

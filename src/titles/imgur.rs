@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use errors::*;
 use webs::Webs;
 
@@ -11,7 +13,7 @@ pub fn image<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
         data.get("height").ok_or("missing height")?
     );
 
-    if let Some(size) = data.get("size").and_then(|s| s.as_f64()) {
+    if let Some(size) = preferred_size(data) {
         title.push(' ');
         title.push_str(&show_size(size));
     }
@@ -35,9 +37,26 @@ pub fn image<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
     if let Some(post_title) = data.get("title").and_then(|s| s.as_str()) {
         title.push_str(" ፤ ");
         title.push_str(post_title)
+    } else if let Some(desc) = data.get("description").and_then(|s| s.as_str()) {
+        title.push_str(" ፤ ");
+        title.push_str(desc);
     }
 
     Ok(title)
+}
+
+fn preferred_size(data: &Value) -> Option<f64> {
+    for key in &["mp4_size", "webm_size", "size"] {
+        if let Some(size) = try_f64(data, key) {
+            return Some(size);
+        }
+    }
+
+    None
+}
+
+fn try_f64(data: &Value, key: &str) -> Option<f64> {
+    data.get(key).and_then(|s| s.as_f64())
 }
 
 fn show_size(val: f64) -> String {
@@ -90,6 +109,19 @@ mod tests {
         "success":true,"status":200}
     "#;
 
+    const VIDEO_WITH_DESCRIPTION: &str = r##"
+        {"data":{"id":"SRup0KZ",
+        "title":null,"description":"#dolphinsandshit","datetime":1523933676,
+        "type":"image\/gif","animated":true,"width":667,"height":500,"size":68422159,
+        "views":920699,"bandwidth":62996213369141,"vote":null,"favorite":false,"nsfw":false,
+        "section":"awesomenature","account_url":null,"account_id":null,"is_ad":false,
+        "in_most_viral":false,"has_sound":false,"tags":[],"ad_type":0,"ad_url":"",
+        "in_gallery":false,"link":"http:\/\/i.imgur.com\/SRup0KZh.gif",
+        "mp4":"https:\/\/i.imgur.com\/SRup0KZ.mp4","gifv":"https:\/\/i.imgur.com\/SRup0KZ.gifv",
+        "mp4_size":8642558,"looping":true},
+        "success":true,"status":200}
+    "##;
+
     struct ImgurTest;
 
     impl Webs for ImgurTest {
@@ -97,6 +129,7 @@ mod tests {
             Ok(match sub {
                 "image/TUgcjTQ" => serde_json::from_str(STRAIGHT_IMAGE).unwrap(),
                 "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
+                "image/SRup0KZ" => serde_json::from_str(VIDEO_WITH_DESCRIPTION).unwrap(),
                 "image/zEG4ULo" => serde_json::from_str(IMAGE_WITH_SECTION).unwrap(),
                 other => unimplemented!(),
             })
@@ -118,6 +151,11 @@ mod tests {
         assert_eq!(
             "720×540 32.5KiB /r/pics sfw ፤ My army is ready, we attack at nightfall",
             super::image(&mut ImgurTest {}, "PmSOx4H").unwrap()
+        );
+
+        assert_eq!(
+            "667x500 8.2MiB /r/awesomenature sfw ፤ #dolphinsandshit",
+            super::image(&mut ImgurTest {}, "SRup0KZ").unwrap()
         );
     }
 }
