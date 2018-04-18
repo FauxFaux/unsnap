@@ -28,15 +28,7 @@ fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String> {
         title.push_str(section);
     }
 
-    title.push(' ');
-    title.push_str(match data.get("nsfw") {
-        Some(v) => match v.as_bool() {
-            Some(true) => "NSFW",
-            Some(false) => "sfw",
-            None => "?fw",
-        },
-        None => "¿fw",
-    });
+    push_sfw(&mut title, data);
 
     if let Some(post_title) = data.get("title").and_then(|s| s.as_str()) {
         title.push_str(" ፤ ");
@@ -52,6 +44,18 @@ fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String> {
     Ok(title)
 }
 
+fn push_sfw(title: &mut String, data: &Value) {
+    title.push(' ');
+    title.push_str(match data.get("nsfw") {
+        Some(v) => match v.as_bool() {
+            Some(true) => "NSFW",
+            Some(false) => "sfw",
+            None => "?fw",
+        },
+        None => "¿fw",
+    });
+}
+
 pub fn gallery<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
     let resp = webs.imgur_get(&format!("album/{}", id))?;
     let data = resp.get("data").ok_or("missing data")?;
@@ -64,21 +68,43 @@ pub fn gallery<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
         .and_then(|c| c.as_i64())
         .ok_or("no image count")?;
 
-    if 1 == count {
-        if let Some(images) = data.get("images") {
-            let image = &images[0];
-            return Ok(format!(
-                "{} ፤ {}",
-                image
-                    .get("link")
-                    .and_then(|s| s.as_str())
-                    .ok_or("no link on embedded image")?,
-                image_body(image, Some(gallery_title))?
-            ));
+    let images = data.get("images")
+        .and_then(|v| v.as_array())
+        .ok_or("no images")?;
+
+    if 1 == count && !images.is_empty() {
+        let image = &images[0];
+        return Ok(format!(
+            "{} ፤ {}",
+            image
+                .get("link")
+                .and_then(|s| s.as_str())
+                .ok_or("no link on embedded image")?,
+            image_body(image, Some(gallery_title))?
+        ));
+    }
+
+    let mut animated = 0;
+    let mut size = 0.;
+
+    for image in images {
+        size += preferred_size(image).ok_or("album image is missing size")?;
+        if let Some(true) = image.get("animated").and_then(|b| b.as_bool()) {
+            animated += 1;
         }
     }
 
-    unimplemented!()
+    let mut title = format!("{}/{} animated ፤ ", animated, images.len());
+    title.push_str(&show_size(size));
+
+    push_sfw(&mut title, data);
+
+    if let Some(post_title) = data.get("title").and_then(|s| s.as_str()) {
+        title.push_str(" ፤ ");
+        title.push_str(post_title)
+    }
+
+    Ok(title)
 }
 
 fn preferred_size(data: &Value) -> Option<f64> {
@@ -175,12 +201,38 @@ mod tests {
         "success":true,"status":200}
     "##;
 
+    const MULTI_IMAGE_ALBUM: &str = r##"
+        {"data":{"id":"mk0v7",
+        "title":"Transformation Tuesday: went from 6xl to 3xl... still got ways to go. Thanks imgur",
+        "description":null,"datetime":1524022042,
+        "cover":"EtJ3EyI","cover_width":2048,"cover_height":2048,
+        "account_url":null,"account_id":null,"privacy":"hidden","layout":"blog",
+        "views":110124,"link":"https:\/\/imgur.com\/a\/mk0v7","favorite":false,"nsfw":null,
+        "section":null,"images_count":2,"in_gallery":true,"is_ad":false,
+        "images":[{
+            "id":"EtJ3EyI","title":null,"description":"#transformation #weight_loss #motivation",
+            "datetime":1524021941,"type":"image\/jpeg","animated":false,"width":2048,"height":2048,
+            "size":368244,"views":98421,"bandwidth":36242942724,"vote":null,"favorite":false,
+            "nsfw":null,"section":null,"account_url":null,"account_id":null,"is_ad":false,
+            "in_most_viral":false,"has_sound":false,"tags":[],"ad_type":0,"ad_url":"",
+            "in_gallery":false,"link":"https:\/\/i.imgur.com\/EtJ3EyI.jpg"
+        },{
+            "id":"HOny6VX","title":null,"description":null,"datetime":1524021936,
+            "type":"image\/png","animated":false,"width":750,"height":1334,"size":519762,
+            "views":97200,"bandwidth":50520866400,"vote":null,"favorite":false,"nsfw":null,
+            "section":null,"account_url":null,"account_id":null,"is_ad":false,"in_most_viral":false,
+            "has_sound":false,"tags":[],"ad_type":0,"ad_url":"","in_gallery":false,
+            "link":"https:\/\/i.imgur.com\/HOny6VX.png"}]},
+        "success":true,"status":200}
+    "##;
+
     struct ImgurTest;
 
     impl Webs for ImgurTest {
         fn imgur_get(&self, sub: &str) -> Result<Value> {
             Ok(match sub {
                 "album/rTV6u" => serde_json::from_str(SINGLE_IMAGE_ALBUM).unwrap(),
+                "album/mk0v7" => serde_json::from_str(MULTI_IMAGE_ALBUM).unwrap(),
                 "image/TUgcjTQ" => serde_json::from_str(STRAIGHT_IMAGE).unwrap(),
                 "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
                 "image/SRup0KZ" => serde_json::from_str(VIDEO_WITH_DESCRIPTION).unwrap(),
@@ -218,6 +270,11 @@ mod tests {
         assert_eq!(
             "https://i.imgur.com/tUulJaV.jpg ፤ 640×770 87.4KiB ?fw ፤ Branch manager and Assistant Branch manager",
             super::gallery(&mut ImgurTest {}, "rTV6u").unwrap()
+        );
+
+        assert_eq!(
+            "0/2 animated ፤ 867.2KiB ?fw ፤ Transformation Tuesday: went from 6xl to 3xl... still got ways to go. Thanks imgur",
+            super::gallery(&mut ImgurTest {}, "mk0v7").unwrap()
         );
     }
 }
