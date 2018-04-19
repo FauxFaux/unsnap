@@ -2,7 +2,7 @@
 extern crate error_chain;
 #[macro_use]
 extern crate hyper;
-
+extern crate iowrap;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
@@ -13,6 +13,7 @@ extern crate rustls;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
+extern crate twoway;
 extern crate webpki;
 extern crate webpki_roots;
 

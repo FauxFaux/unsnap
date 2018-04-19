@@ -1,3 +1,4 @@
+mod html;
 mod imgur;
 
 use regex::Regex;

@@ -134,10 +134,12 @@ fn show_size(val: f64) -> String {
 
 #[cfg(test)]
 mod tests {
+    use reqwest::IntoUrl;
     use serde_json;
     use serde_json::Value;
 
     use errors::*;
+    use webs::Resp;
     use webs::Webs;
 
     const STRAIGHT_IMAGE: &str = r#"
@@ -239,6 +241,10 @@ mod tests {
                 "image/zEG4ULo" => serde_json::from_str(IMAGE_WITH_SECTION).unwrap(),
                 other => unimplemented!(),
             })
+        }
+
+        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {
+            unimplemented!()
         }
     }
 

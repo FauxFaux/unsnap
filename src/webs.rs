@@ -1,7 +1,11 @@
 use std::fmt;
+use std::io;
+use std::io::Read;
 
 use reqwest::header::Authorization;
 use reqwest::Client;
+use reqwest::IntoUrl;
+use reqwest::Response;
 use serde_json::Value;
 
 use config::Config;
@@ -10,6 +14,7 @@ use errors::*;
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value>;
+    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp>;
 }
 
 pub struct Internet<'c> {
@@ -17,20 +22,8 @@ pub struct Internet<'c> {
     client: Client,
 }
 
-#[cfg(never)]
-struct ClientId {
-    token: String,
-}
-
-#[cfg(never)]
-impl Scheme for ClientId {
-    fn scheme<'a>() -> Option<&'a str> {
-        None
-    }
-
-    fn fmt_scheme(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Client-ID {}", self.token)
-    }
+pub struct Resp {
+    inner: Response,
 }
 
 impl<'c> Internet<'c> {
@@ -53,5 +46,16 @@ impl<'c> Webs for Internet<'c> {
             .send()?
             .json()
             .chain_err(|| format!("bad json from imgur"))
+    }
+
+    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {
+        let inner = self.client.get(url).send()?;
+        Ok(Resp { inner })
+    }
+}
+
+impl Read for Resp {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
     }
 }
