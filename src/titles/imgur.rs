@@ -3,7 +3,7 @@ use serde_json::Value;
 use errors::*;
 use webs::Webs;
 
-pub fn image<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
+pub fn image<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let resp = webs.imgur_get(&format!("image/{}", id))?;
     let data = resp.get("data").ok_or("missing data")?;
 
@@ -56,7 +56,7 @@ fn push_sfw(title: &mut String, data: &Value) {
     });
 }
 
-pub fn gallery<W: Webs>(webs: &mut W, id: &str) -> Result<String> {
+pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let resp = webs.imgur_get(&format!("album/{}", id))?;
     let data = resp.get("data").ok_or("missing data")?;
 

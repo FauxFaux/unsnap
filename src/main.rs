@@ -1,93 +1,84 @@
 #[macro_use]
 extern crate error_chain;
-#[macro_use]
-extern crate hyper;
 extern crate iowrap;
+extern crate irc;
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 extern crate number_prefix;
 extern crate reqwest;
-extern crate rustls;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
 extern crate twoway;
-extern crate webpki;
-extern crate webpki_roots;
 
-mod comms;
 mod config;
 mod errors;
 mod files;
-mod parse;
 mod titles;
 mod webs;
 
+use irc::client::prelude::*;
+
 use errors::*;
-use parse::Command;
-use parse::Ident;
-use parse::Targeted;
 use webs::Webs;
 
 quick_main!(run);
 
-#[derive(Copy, Clone, Debug)]
-enum State {
-    Connecting,
-    Connected,
-}
-
 fn run() -> Result<()> {
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
 
-    let mut state = State::Connecting;
-    let mut webs = webs::Internet::new(&config);
+    let irc_config = irc::client::prelude::Config {
+        nickname: Some(config.server.nick.to_string()),
+        server: Some(config.server.hostname.to_string()),
+        username: config.server.user.clone(),
+        channels: Some(config.server.channels.clone()),
+        ..Default::default()
+    };
 
-    let mut conn = comms::Comm::connect(&config.server.hostname, config.server.port)?;
-    conn.write_line(format!(
-        "USER {} * * :{}",
-        config.server.user.as_ref().unwrap_or(&config.server.nick),
-        config
-            .server
-            .real_name
-            .as_ref()
-            .unwrap_or(&config.server.nick)
-    ))?;
-    conn.write_line(format!("NICK {}", &config.server.nick))?;
+    let mut webs = webs::Internet::new(config);
 
-    loop {
-        let line = match conn.read_line()? {
-            Some(line) => line,
-            None => continue,
-        };
+    let mut async_bullshit = irc::client::prelude::IrcReactor::new().map_err(unerr)?;
+    let client = async_bullshit
+        .prepare_client_and_connect(&irc_config)
+        .map_err(unerr)?;
 
-        let parsed = parse::parse(&line)?;
-        println!("<- {:?}", parsed);
+    client.identify().map_err(unerr)?;
 
-        match parsed.command {
-            Command::Ping(token) => conn.write_line(format!("PONG {}", token))?,
-            Command::Numeric(1, _) => {
-                state = State::Connected;
-                conn.write_line("CAP LS 302")?;
-                for channel in &config.server.channels {
-                    conn.write_line(format!("JOIN {}", channel))?;
-                }
-            }
-            Command::PrivMsg(Targeted { dest, msg }) => {
-                process_msg(&mut webs, &parsed.whom, dest, msg, |s| conn.write_line(s))?
-            }
-            _ => (),
+    async_bullshit.register_client_with_handler(client, move |client, message| {
+        if let Err(e) = handle(&webs, client, &message) {
+            eprintln!("processing error: {:?}: {:?}", message, e);
         }
+        Ok(())
+    });
+
+    async_bullshit.run().map_err(unerr)?;
+    Ok(())
+}
+
+fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()> {
+    println!("<- {:?}", message);
+
+    match message.command {
+        Command::PRIVMSG(ref dest, ref msg) => if let Some(nick) = message.source_nickname() {
+            process_msg(webs, nick, &dest, &msg, |s| {
+                client.send_notice(dest, s).map_err(unerr)
+            })?
+        },
+        _ => (),
     }
 
     Ok(())
 }
 
+fn unerr(err: irc::error::IrcError) -> Error {
+    format!("irc error: {:?}", err).into()
+}
+
 fn process_msg<F, W: Webs>(
-    webs: &mut W,
-    whom: &Ident,
+    webs: &W,
+    nick: &str,
     into: &str,
     msg: &str,
     mut write: F,
@@ -97,7 +88,7 @@ where
 {
     for title in titles::titles_for(webs, msg) {
         let title = title?;
-        write(&format!("NOTICE {} :{}: {}", into, whom.nick(), title))?;
+        write(&format!("{}: {}", nick, title))?;
     }
     Ok(())
 }

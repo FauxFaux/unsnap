@@ -17,8 +17,8 @@ pub trait Webs {
     fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp>;
 }
 
-pub struct Internet<'c> {
-    config: &'c Config,
+pub struct Internet {
+    config: Config,
     client: Client,
 }
 
@@ -26,8 +26,8 @@ pub struct Resp {
     inner: Response,
 }
 
-impl<'c> Internet<'c> {
-    pub fn new(config: &Config) -> Internet {
+impl Internet {
+    pub fn new(config: Config) -> Internet {
         Internet {
             config,
             client: Client::new(),
@@ -35,7 +35,7 @@ impl<'c> Internet<'c> {
     }
 }
 
-impl<'c> Webs for Internet<'c> {
+impl Webs for Internet {
     fn imgur_get(&self, sub: &str) -> Result<Value> {
         self.client
             .get(&format!("https://api.imgur.com/3/{}", sub))
