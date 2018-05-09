@@ -62,7 +62,7 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
 
     match message.command {
         Command::PRIVMSG(ref dest, ref msg) => if let Some(nick) = message.source_nickname() {
-            process_msg(webs, nick, &dest, &msg, |s| {
+            process_msg(webs, nick, &msg, |s| {
                 client.send_notice(dest, s).map_err(unerr)
             })?
         },
@@ -76,13 +76,7 @@ fn unerr(err: irc::error::IrcError) -> Error {
     format!("irc error: {:?}", err).into()
 }
 
-fn process_msg<F, W: Webs>(
-    webs: &W,
-    nick: &str,
-    into: &str,
-    msg: &str,
-    mut write: F,
-) -> Result<()>
+fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<()>
 where
     F: FnMut(&str) -> Result<()>,
 {
