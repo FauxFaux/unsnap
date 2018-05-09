@@ -2,6 +2,7 @@ mod html;
 mod imgur;
 
 use regex::Regex;
+use result::ResultOptionExt;
 
 use errors::*;
 use webs::Webs;
@@ -16,12 +17,7 @@ lazy_static! {
 
 pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String>> {
     URL.find_iter(line)
-        // FLIP? invert.
-        .filter_map(|url| match title_for(webs, url.as_str()) {
-            Ok(Some(x)) => Some(Ok(x)),
-            Err(e) => Some(Err(e)),
-            Ok(None) => None,
-        })
+        .filter_map(|url| title_for(webs, url.as_str()).invert())
         .collect()
 }
 

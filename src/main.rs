@@ -7,6 +7,7 @@ extern crate regex;
 extern crate lazy_static;
 extern crate number_prefix;
 extern crate reqwest;
+extern crate result;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
