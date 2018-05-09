@@ -239,7 +239,7 @@ mod tests {
                 "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
                 "image/SRup0KZ" => serde_json::from_str(VIDEO_WITH_DESCRIPTION).unwrap(),
                 "image/zEG4ULo" => serde_json::from_str(IMAGE_WITH_SECTION).unwrap(),
-                other => unimplemented!(),
+                other => unimplemented!("test bug, missing url: {:?}", other),
             })
         }
 

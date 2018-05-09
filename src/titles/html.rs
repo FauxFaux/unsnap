@@ -1,11 +1,10 @@
 use iowrap::ReadMany;
-use regex::Regex;
 use twoway;
 
 use errors::*;
 use webs::Webs;
 
-pub fn process<W: Webs>(webs: &mut W, url: &str) -> Result<String> {
+pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String> {
     let mut resp = webs.raw_get(url)?;
 
     let mut buf = [0u8; 16 * 4096];

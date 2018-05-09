@@ -38,7 +38,7 @@ fn run() -> Result<()> {
         ..Default::default()
     };
 
-    let mut webs = webs::Internet::new(config);
+    let webs = webs::Internet::new(config);
 
     let mut async_bullshit = irc::client::prelude::IrcReactor::new().map_err(unerr)?;
     let client = async_bullshit

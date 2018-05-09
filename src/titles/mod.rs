@@ -32,5 +32,5 @@ pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>> {
         return Ok(Some(imgur::gallery(webs, id)?));
     }
 
-    Ok(None)
+    Ok(html::process(webs, url).ok())
 }
