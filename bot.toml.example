@@ -6,3 +6,4 @@ channels = ["#unsnap"]
 [keys]
 imgur_client_id = "ababa"
 imgur_client_secret = "ababa"
+youtube_developer_key = "ababa"

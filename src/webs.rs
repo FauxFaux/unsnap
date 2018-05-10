@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io;
 use std::io::Read;
 
@@ -13,6 +14,7 @@ use errors::*;
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value>;
+    fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value>;
     fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp>;
 }
 
@@ -45,6 +47,20 @@ impl Webs for Internet {
             .send()?
             .json()
             .chain_err(|| format!("bad json from imgur"))
+    }
+
+    fn youtube_get<'s>(&self, url_suffix: &str, mut body: HashMap<&str, &str>) -> Result<Value> {
+        let mut form = hashmap! {"key" => self.config.keys.youtube_developer_key.as_str() };
+        form.extend(body);
+        self.client
+            .post(&format!(
+                "https://www.googleapis.com/youtube/{}",
+                url_suffix
+            ))
+            .form(&form)
+            .send()?
+            .json()
+            .chain_err(|| format!("bad json from youtube"))
     }
 
     fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {

@@ -1,0 +1,103 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "\"95M1zlW0txkV42I4OG1Zscxrg5A/ulX4q4rJEnNJ3U-H9jAFcq02Nkk\"",
+  "pageInfo": {
+    "totalResults": 1,
+    "resultsPerPage": 1
+  },
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "\"95M1zlW0txkV42I4OG1Zscxrg5A/UTRjlmRUp2gCSU6RPSxWEUr6XsE\"",
+      "id": "JwhjqdSPw5g",
+      "snippet": {
+        "publishedAt": "2013-03-08T17:23:49.000Z",
+        "channelId": "UC982LtollT1uiccr4uhbJcg",
+        "title": "Platinum Level Circulation (Avicii x Tsukihi Araragi x Nadeko Sengoku)",
+        "description": "RIP Avicii\n_\n__\n-\nararararararararararararararararararararararararararararararagi\n\n\n\"Platinum Disco\" by Yuka Iguchi\n\"Renai Circulation\" by Kana Hanazawa\n\"Levels\" by Avicii\n\ndl link: http://www.mediafire.com/?73j8sd49pcd2dsj",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/JwhjqdSPw5g/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/JwhjqdSPw5g/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/JwhjqdSPw5g/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          },
+          "standard": {
+            "url": "https://i.ytimg.com/vi/JwhjqdSPw5g/sddefault.jpg",
+            "width": 640,
+            "height": 480
+          },
+          "maxres": {
+            "url": "https://i.ytimg.com/vi/JwhjqdSPw5g/maxresdefault.jpg",
+            "width": 1280,
+            "height": 720
+          }
+        },
+        "channelTitle": "shoopfex",
+        "tags": [
+          "bakemonogatari",
+          "nisemonogatari",
+          "anime",
+          "remix",
+          "mashup",
+          "yuka iguchi",
+          "kana hanazawa",
+          "renai circulation",
+          "platinum disco",
+          "levels",
+          "song",
+          "opening",
+          "op",
+          "phoenix",
+          "snake",
+          "House Music (Musical Genre)",
+          "Mix",
+          "shaft",
+          "theme",
+          "weed circulation",
+          "nekomonogatari",
+          "japanese",
+          "japan",
+          "animation",
+          "cartoon",
+          "manga",
+          "instrumental",
+          "vocal",
+          "off-vocal",
+          "Theme Song",
+          "ending",
+          "ed",
+          "koyomi araragi",
+          "hitagi senjougahara",
+          "karen araragi",
+          "tsubasa hanekawa",
+          "suruga kanbaru",
+          "shinobu oshino",
+          "mayoi hachikuji",
+          "kaiki",
+          "madoka",
+          "magica",
+          "puella",
+          "magi",
+          "mahou",
+          "shoujo"
+        ],
+        "categoryId": "10",
+        "liveBroadcastContent": "none",
+        "localized": {
+          "title": "Platinum Level Circulation (Avicii x Tsukihi Araragi x Nadeko Sengoku)",
+          "description": "RIP Avicii\n_\n__\n-\nararararararararararararararararararararararararararararararagi\n\n\n\"Platinum Disco\" by Yuka Iguchi\n\"Renai Circulation\" by Kana Hanazawa\n\"Levels\" by Avicii\n\ndl link: http://www.mediafire.com/?73j8sd49pcd2dsj"
+        }
+      }
+    }
+  ]
+}

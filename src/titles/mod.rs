@@ -1,5 +1,6 @@
 mod html;
 mod imgur;
+mod youtube;
 
 use regex::Regex;
 use result::ResultOptionExt;

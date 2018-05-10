@@ -134,6 +134,8 @@ fn show_size(val: f64) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use reqwest::IntoUrl;
     use serde_json;
     use serde_json::Value;
@@ -241,6 +243,10 @@ mod tests {
                 "image/zEG4ULo" => serde_json::from_str(IMAGE_WITH_SECTION).unwrap(),
                 other => unimplemented!("test bug, missing url: {:?}", other),
             })
+        }
+
+        fn youtube_get(&self, url_suffix: &str, body_suffix: HashMap<&str, &str>) -> Result<Value> {
+            unimplemented!()
         }
 
         fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {
