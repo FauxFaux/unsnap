@@ -17,8 +17,6 @@ pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
         ),
     )?;
 
-    println!("{:?}", resp);
-
     let data = resp.get("items")
         .ok_or(format_err!("missing items"))?
         .get(0)
