@@ -1,10 +1,10 @@
+use failure::Error;
 use iowrap::ReadMany;
 use twoway;
 
-use errors::*;
 use webs::Webs;
 
-pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String> {
+pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let mut resp = webs.raw_get(url)?;
 
     let mut buf = [0u8; 16 * 4096];
@@ -14,16 +14,16 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String> {
     parse_html(buf)
 }
 
-fn parse_html(buf: &[u8]) -> Result<String> {
+fn parse_html(buf: &[u8]) -> Result<String, Error> {
     // I'm not parsing HTML with regex.
     // It took me about four hours to write this code.
     // Not in coding time. In hating myself.
 
-    let buf = &buf[twoway::find_bytes(buf, b"<title").ok_or("no title")?..];
-    let buf = &buf[find_byte(buf, b'>').ok_or("no title tag terminator")?..];
+    let buf = &buf[twoway::find_bytes(buf, b"<title").ok_or(format_err!("no title"))?..];
+    let buf = &buf[find_byte(buf, b'>').ok_or(format_err!("no title tag terminator"))?..];
     ensure!(!buf.is_empty(), "title starts at end of sub-document");
     let buf = &buf[1..];
-    let buf = &buf[..find_byte(buf, b'<').ok_or("no title terminator")?];
+    let buf = &buf[..find_byte(buf, b'<').ok_or(format_err!("no title terminator"))?];
 
     Ok(String::from_utf8_lossy(buf).to_string())
 }

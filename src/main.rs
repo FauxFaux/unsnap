@@ -1,7 +1,6 @@
 extern crate chrono;
-extern crate failure;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate iowrap;
 extern crate irc;
 extern crate regex;
@@ -20,19 +19,16 @@ extern crate toml;
 extern crate twoway;
 
 mod config;
-mod errors;
 mod files;
 mod titles;
 mod webs;
 
+use failure::Error;
 use irc::client::prelude::*;
 
-use errors::*;
 use webs::Webs;
 
-quick_main!(run);
-
-fn run() -> Result<()> {
+fn main() -> Result<(), Error> {
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
 
     let irc_config = irc::client::prelude::Config {
@@ -63,7 +59,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()> {
+fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<(), Error> {
     println!("<- {:?}", message);
 
     match message.command {
@@ -79,12 +75,12 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
 }
 
 fn unerr(err: irc::error::IrcError) -> Error {
-    format!("irc error: {:?}", err).into()
+    format_err!("irc error: {:?}", err)
 }
 
-fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<()>
+fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<(), Error>
 where
-    F: FnMut(&str) -> Result<()>,
+    F: FnMut(&str) -> Result<(), Error>,
 {
     for title in titles::titles_for(webs, msg) {
         let title = title?;

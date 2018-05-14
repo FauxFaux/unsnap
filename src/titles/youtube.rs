@@ -2,13 +2,13 @@ use std::time::Duration;
 
 use chrono::DateTime;
 use chrono::Utc;
+use failure::Error;
 use serde_json::Value;
 use time_parse::duration;
 
-use errors::*;
 use webs::Webs;
 
-pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
+pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.youtube_get(
         "v3/videos",
         hashmap!(
@@ -20,20 +20,20 @@ pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
     println!("{:?}", resp);
 
     let data = resp.get("items")
-        .ok_or("missing items")?
+        .ok_or(format_err!("missing items"))?
         .get(0)
-        .ok_or("unexpectedly empty items")?;
+        .ok_or(format_err!("unexpectedly empty items"))?;
 
-    let snippet = data.get("snippet").ok_or("snippet missing")?;
+    let snippet = data.get("snippet").ok_or(format_err!("snippet missing"))?;
 
     let title = string(snippet.get("title"))?;
     let channel_title = string(snippet.get("channelTitle"))?;
     let published = DateTime::parse_from_rfc3339(string(snippet.get("publishedAt"))?)?;
     let duration = duration::parse(string(
         data.get("contentDetails")
-            .ok_or("no content details")?
+            .ok_or(format_err!("no content details"))?
             .get("duration"),
-    )?).map_err(|e| format!("{:?}", e))?;
+    )?)?;
 
     Ok(format!(
         "{} {} ፤ [{}] ፤ {}",
@@ -44,8 +44,10 @@ pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
     ))
 }
 
-fn string(value: Option<&Value>) -> Result<&str> {
-    Ok(value.and_then(|v| v.as_str()).ok_or("expected a string")?)
+fn string(value: Option<&Value>) -> Result<&str, Error> {
+    Ok(value
+        .and_then(|v| v.as_str())
+        .ok_or(format_err!("expected a string"))?)
 }
 
 fn major_duration_unit(duration: &Duration) -> String {
@@ -65,24 +67,24 @@ fn major_duration_unit(duration: &Duration) -> String {
 mod tests {
     use std::collections::HashMap;
 
+    use failure::Error;
     use reqwest::IntoUrl;
     use serde_json;
     use serde_json::Value;
 
-    use errors::*;
     use webs::Resp;
     use webs::Webs;
 
     struct YoutubeTest;
 
     impl Webs for YoutubeTest {
-        fn imgur_get(&self, sub: &str) -> Result<Value> {
+        fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
             unimplemented!()
         }
 
-        fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value> {
+        fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value, Error> {
             assert_eq!("v3/videos", url_suffix);
-            let aiweechoo = hashmap! { "key" => "JwhjqdSPw5g", "content" => "snippet" };
+            let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
             Ok(match body {
                 ref val if *val == aiweechoo => serde_json::from_str(include_str!(
                     "../../tests/youtube-aiweechoo.json"
@@ -91,7 +93,7 @@ mod tests {
             })
         }
 
-        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {
+        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error> {
             unimplemented!()
         }
     }

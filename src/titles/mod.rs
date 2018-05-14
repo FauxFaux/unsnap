@@ -2,10 +2,10 @@ mod html;
 mod imgur;
 mod youtube;
 
+use failure::Error;
 use regex::Regex;
 use result::ResultOptionExt;
 
-use errors::*;
 use webs::Webs;
 
 lazy_static! {
@@ -19,13 +19,13 @@ lazy_static! {
     ).unwrap();
 }
 
-pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String>> {
+pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String, Error>> {
     URL.find_iter(line)
         .filter_map(|url| title_for(webs, url.as_str()).invert())
         .collect()
 }
 
-pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>> {
+pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
     if let Some(m) = IMGUR_IMAGE.captures(url) {
         let id = &m[1];
         return Ok(Some(imgur::image(webs, id)?));

@@ -1,20 +1,20 @@
+use failure::Error;
 use serde_json::Value;
 
-use errors::*;
 use webs::Webs;
 
-pub fn image<W: Webs>(webs: &W, id: &str) -> Result<String> {
+pub fn image<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.imgur_get(&format!("image/{}", id))?;
-    let data = resp.get("data").ok_or("missing data")?;
+    let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
     image_body(data, None)
 }
 
-fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String> {
+fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String, Error> {
     let mut title = format!(
         "{}×{}",
-        data.get("width").ok_or("missing width")?,
-        data.get("height").ok_or("missing height")?
+        data.get("width").ok_or(format_err!("missing width"))?,
+        data.get("height").ok_or(format_err!("missing height"))?
     );
 
     if let Some(size) = preferred_size(data) {
@@ -56,21 +56,21 @@ fn push_sfw(title: &mut String, data: &Value) {
     });
 }
 
-pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String> {
+pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.imgur_get(&format!("album/{}", id))?;
-    let data = resp.get("data").ok_or("missing data")?;
+    let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
     let gallery_title = data.get("title")
         .and_then(|t| t.as_str())
-        .ok_or("missing title")?;
+        .ok_or(format_err!("missing title"))?;
 
     let count = data.get("images_count")
         .and_then(|c| c.as_i64())
-        .ok_or("no image count")?;
+        .ok_or(format_err!("no image count"))?;
 
     let images = data.get("images")
         .and_then(|v| v.as_array())
-        .ok_or("no images")?;
+        .ok_or(format_err!("no images"))?;
 
     if 1 == count && !images.is_empty() {
         let image = &images[0];
@@ -79,7 +79,7 @@ pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String> {
             image
                 .get("link")
                 .and_then(|s| s.as_str())
-                .ok_or("no link on embedded image")?,
+                .ok_or(format_err!("no link on embedded image"))?,
             image_body(image, Some(gallery_title))?
         ));
     }
@@ -88,7 +88,7 @@ pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let mut size = 0.;
 
     for image in images {
-        size += preferred_size(image).ok_or("album image is missing size")?;
+        size += preferred_size(image).ok_or(format_err!("album image is missing size"))?;
         if let Some(true) = image.get("animated").and_then(|b| b.as_bool()) {
             animated += 1;
         }
@@ -136,11 +136,11 @@ fn show_size(val: f64) -> String {
 mod tests {
     use std::collections::HashMap;
 
+    use failure::Error;
     use reqwest::IntoUrl;
     use serde_json;
     use serde_json::Value;
 
-    use errors::*;
     use webs::Resp;
     use webs::Webs;
 
@@ -233,7 +233,7 @@ mod tests {
     struct ImgurTest;
 
     impl Webs for ImgurTest {
-        fn imgur_get(&self, sub: &str) -> Result<Value> {
+        fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
             Ok(match sub {
                 "album/rTV6u" => serde_json::from_str(SINGLE_IMAGE_ALBUM).unwrap(),
                 "album/mk0v7" => serde_json::from_str(MULTI_IMAGE_ALBUM).unwrap(),
@@ -245,11 +245,15 @@ mod tests {
             })
         }
 
-        fn youtube_get(&self, url_suffix: &str, body_suffix: HashMap<&str, &str>) -> Result<Value> {
+        fn youtube_get(
+            &self,
+            url_suffix: &str,
+            body_suffix: HashMap<&str, &str>,
+        ) -> Result<Value, Error> {
             unimplemented!()
         }
 
-        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {
+        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error> {
             unimplemented!()
         }
     }

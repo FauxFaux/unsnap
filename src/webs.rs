@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Read;
 
+use failure::Error;
+use failure::ResultExt;
 use reqwest::header::Authorization;
 use reqwest::Client;
 use reqwest::IntoUrl;
@@ -10,13 +12,12 @@ use reqwest::Url;
 use serde_json::Value;
 
 use config::Config;
-use errors::*;
 
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
-    fn imgur_get(&self, sub: &str) -> Result<Value>;
-    fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value>;
-    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp>;
+    fn imgur_get(&self, sub: &str) -> Result<Value, Error>;
+    fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value, Error>;
+    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error>;
 }
 
 pub struct Internet {
@@ -38,8 +39,8 @@ impl Internet {
 }
 
 impl Webs for Internet {
-    fn imgur_get(&self, sub: &str) -> Result<Value> {
-        self.client
+    fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
+        Ok(self.client
             .get(&format!("https://api.imgur.com/3/{}", sub))
             .header(Authorization(format!(
                 "Client-ID {}",
@@ -47,10 +48,14 @@ impl Webs for Internet {
             )))
             .send()?
             .json()
-            .chain_err(|| format!("bad json from imgur"))
+            .context("bad json from imgur")?)
     }
 
-    fn youtube_get<'s>(&self, url_suffix: &str, mut body: HashMap<&str, &str>) -> Result<Value> {
+    fn youtube_get<'s>(
+        &self,
+        url_suffix: &str,
+        mut body: HashMap<&str, &str>,
+    ) -> Result<Value, Error> {
         let mut args = hashmap! {"key" => self.config.keys.youtube_developer_key.as_str() };
         args.extend(body);
 
@@ -59,14 +64,14 @@ impl Webs for Internet {
             args,
         ).unwrap();
 
-        self.client
+        Ok(self.client
             .get(url)
             .send()?
             .json()
-            .chain_err(|| format!("bad json from youtube"))
+            .context("bad json from youtube")?)
     }
 
-    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp> {
+    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error> {
         let inner = self.client.get(url).send()?;
         Ok(Resp { inner })
     }
