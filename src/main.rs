@@ -41,12 +41,11 @@ fn main() -> Result<(), Error> {
 
     let webs = webs::Internet::new(config);
 
-    let mut async_bullshit = irc::client::prelude::IrcReactor::new().map_err(unerr)?;
+    let mut async_bullshit = irc::client::prelude::IrcReactor::new()?;
     let client = async_bullshit
-        .prepare_client_and_connect(&irc_config)
-        .map_err(unerr)?;
+        .prepare_client_and_connect(&irc_config)?;
 
-    client.identify().map_err(unerr)?;
+    client.identify()?;
 
     async_bullshit.register_client_with_handler(client, move |client, message| {
         if let Err(e) = handle(&webs, client, &message) {
@@ -55,7 +54,7 @@ fn main() -> Result<(), Error> {
         Ok(())
     });
 
-    async_bullshit.run().map_err(unerr)?;
+    async_bullshit.run()?;
     Ok(())
 }
 
@@ -65,7 +64,7 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
     match message.command {
         Command::PRIVMSG(ref dest, ref msg) => if let Some(nick) = message.source_nickname() {
             process_msg(webs, nick, &msg, |s| {
-                client.send_notice(dest, s).map_err(unerr)
+                Ok(client.send_notice(dest, s)?)
             })?
         },
         _ => (),
@@ -74,9 +73,6 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
     Ok(())
 }
 
-fn unerr(err: irc::error::IrcError) -> Error {
-    format_err!("irc error: {:?}", err)
-}
 
 fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<(), Error>
 where
