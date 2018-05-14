@@ -1,3 +1,5 @@
+extern crate chrono;
+extern crate failure;
 #[macro_use]
 extern crate error_chain;
 extern crate iowrap;
@@ -13,6 +15,7 @@ extern crate result;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate time_parse;
 extern crate toml;
 extern crate twoway;
 

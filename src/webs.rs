@@ -6,6 +6,7 @@ use reqwest::header::Authorization;
 use reqwest::Client;
 use reqwest::IntoUrl;
 use reqwest::Response;
+use reqwest::Url;
 use serde_json::Value;
 
 use config::Config;
@@ -50,14 +51,16 @@ impl Webs for Internet {
     }
 
     fn youtube_get<'s>(&self, url_suffix: &str, mut body: HashMap<&str, &str>) -> Result<Value> {
-        let mut form = hashmap! {"key" => self.config.keys.youtube_developer_key.as_str() };
-        form.extend(body);
+        let mut args = hashmap! {"key" => self.config.keys.youtube_developer_key.as_str() };
+        args.extend(body);
+
+        let url = Url::parse_with_params(
+            &format!("https://www.googleapis.com/youtube/{}", url_suffix),
+            args,
+        ).unwrap();
+
         self.client
-            .post(&format!(
-                "https://www.googleapis.com/youtube/{}",
-                url_suffix
-            ))
-            .form(&form)
+            .get(url)
             .send()?
             .json()
             .chain_err(|| format!("bad json from youtube"))
