@@ -16,7 +16,7 @@ use config::Config;
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error>;
-    fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value, Error>;
+    fn youtube_get(&self, url_suffix: &str, body: &HashMap<&str, &str>) -> Result<Value, Error>;
     fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error>;
 }
 
@@ -54,7 +54,7 @@ impl Webs for Internet {
     fn youtube_get<'s>(
         &self,
         url_suffix: &str,
-        mut body: HashMap<&str, &str>,
+        body: &HashMap<&str, &str>,
     ) -> Result<Value, Error> {
         let mut args = hashmap! {"key" => self.config.keys.youtube_developer_key.as_str() };
         args.extend(body);

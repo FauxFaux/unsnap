@@ -11,7 +11,7 @@ use webs::Webs;
 pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.youtube_get(
         "v3/videos",
-        hashmap!(
+        &hashmap!(
             "id" => id,
             "part" => "snippet,contentDetails"
         ),
@@ -80,11 +80,11 @@ mod tests {
             unimplemented!()
         }
 
-        fn youtube_get(&self, url_suffix: &str, body: HashMap<&str, &str>) -> Result<Value, Error> {
+        fn youtube_get(&self, url_suffix: &str, body: &HashMap<&str, &str>) -> Result<Value, Error> {
             assert_eq!("v3/videos", url_suffix);
             let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
             Ok(match body {
-                ref val if *val == aiweechoo => serde_json::from_str(include_str!(
+                val if *val == aiweechoo => serde_json::from_str(include_str!(
                     "../../tests/youtube-aiweechoo.json"
                 )).unwrap(),
                 body => unimplemented!("test bug: {:?}", body),

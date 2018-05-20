@@ -248,7 +248,7 @@ mod tests {
         fn youtube_get(
             &self,
             url_suffix: &str,
-            body_suffix: HashMap<&str, &str>,
+            body_suffix: &HashMap<&str, &str>,
         ) -> Result<Value, Error> {
             unimplemented!()
         }
