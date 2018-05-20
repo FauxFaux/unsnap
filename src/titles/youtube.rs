@@ -76,7 +76,7 @@ mod tests {
     struct YoutubeTest;
 
     impl Webs for YoutubeTest {
-        fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
+        fn imgur_get(&self, _sub: &str) -> Result<Value, Error> {
             unimplemented!()
         }
 
@@ -91,7 +91,7 @@ mod tests {
             })
         }
 
-        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error> {
+        fn raw_get<U: IntoUrl>(&self, _url: U) -> Result<Resp, Error> {
             unimplemented!()
         }
     }
