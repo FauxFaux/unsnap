@@ -40,7 +40,8 @@ impl Internet {
 
 impl Webs for Internet {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
-        Ok(self.client
+        Ok(self
+            .client
             .get(&format!("https://api.imgur.com/3/{}", sub))
             .header(Authorization(format!(
                 "Client-ID {}",
@@ -64,7 +65,8 @@ impl Webs for Internet {
             args,
         ).unwrap();
 
-        Ok(self.client
+        Ok(self
+            .client
             .get(url)
             .send()?
             .json()

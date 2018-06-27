@@ -17,7 +17,8 @@ pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
         ),
     )?;
 
-    let data = resp.get("items")
+    let data = resp
+        .get("items")
         .ok_or(format_err!("missing items"))?
         .get(0)
         .ok_or(format_err!("unexpectedly empty items"))?;
@@ -80,7 +81,11 @@ mod tests {
             unimplemented!()
         }
 
-        fn youtube_get(&self, url_suffix: &str, body: &HashMap<&str, &str>) -> Result<Value, Error> {
+        fn youtube_get(
+            &self,
+            url_suffix: &str,
+            body: &HashMap<&str, &str>,
+        ) -> Result<Value, Error> {
             assert_eq!("v3/videos", url_suffix);
             let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
             Ok(match body {

@@ -42,8 +42,7 @@ fn main() -> Result<(), Error> {
     let webs = webs::Internet::new(config);
 
     let mut async_bullshit = irc::client::prelude::IrcReactor::new()?;
-    let client = async_bullshit
-        .prepare_client_and_connect(&irc_config)?;
+    let client = async_bullshit.prepare_client_and_connect(&irc_config)?;
 
     client.identify()?;
 
@@ -63,16 +62,13 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
 
     match message.command {
         Command::PRIVMSG(ref dest, ref msg) => if let Some(nick) = message.source_nickname() {
-            process_msg(webs, nick, &msg, |s| {
-                Ok(client.send_notice(dest, s)?)
-            })?
+            process_msg(webs, nick, &msg, |s| Ok(client.send_notice(dest, s)?))?
         },
         _ => (),
     }
 
     Ok(())
 }
-
 
 fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<(), Error>
 where

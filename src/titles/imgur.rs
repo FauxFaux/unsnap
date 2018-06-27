@@ -60,15 +60,18 @@ pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.imgur_get(&format!("album/{}", id))?;
     let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
-    let gallery_title = data.get("title")
+    let gallery_title = data
+        .get("title")
         .and_then(|t| t.as_str())
         .ok_or(format_err!("missing title"))?;
 
-    let count = data.get("images_count")
+    let count = data
+        .get("images_count")
         .and_then(|c| c.as_i64())
         .ok_or(format_err!("no image count"))?;
 
-    let images = data.get("images")
+    let images = data
+        .get("images")
         .and_then(|v| v.as_array())
         .ok_or(format_err!("no images"))?;
 
