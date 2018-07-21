@@ -81,6 +81,10 @@ mod tests {
             unimplemented!()
         }
 
+        fn twitter_get(&mut self, sub: &str) -> Result<Value, Error> {
+            unimplemented!()
+        }
+
         fn youtube_get(
             &self,
             url_suffix: &str,

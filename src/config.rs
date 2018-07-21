@@ -25,5 +25,7 @@ fn default_port() -> u16 {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Keys {
     pub imgur_client_id: String,
+    pub twitter_app_key: String,
+    pub twitter_app_secret: String,
     pub youtube_developer_key: String,
 }

@@ -1,5 +1,6 @@
 mod html;
 mod imgur;
+mod twitter;
 mod youtube;
 
 use failure::Error;
