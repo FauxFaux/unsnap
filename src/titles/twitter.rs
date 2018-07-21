@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use webs::Webs;
 
-pub fn tweet<W: Webs>(webs: &mut W, id: &str) -> Result<String, Error> {
+pub fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.twitter_get(&format!("1.1/statuses/show.json?id={}", id))?;
 
     let text = resp
@@ -46,7 +46,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn twitter_get(&mut self, sub: &str) -> Result<Value, Error> {
+        fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
             Ok(match sub {
                 "1.1/statuses/show.json?id=210462857140252672" => serde_json::from_str(
                     include_str!("../../tests/twitter-docsample.json"),

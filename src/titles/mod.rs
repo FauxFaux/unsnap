@@ -15,6 +15,8 @@ lazy_static! {
         Regex::new(r"https?://i\.imgur\.com/([a-zA-Z0-9]{5,9})\.(?:jpg|mp4|webm|png|gif)").unwrap();
     static ref IMGUR_GALLERY: Regex =
         Regex::new(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/([a-zA-Z0-9]{5,7})").unwrap();
+    static ref TWITTER_TWEET: Regex =
+        Regex::new(r"https?://(?:www\.)?twitter.com/(?:[^/]+)/status/(\d{16,25})").unwrap();
     static ref YOUTUBE_VIDEO: Regex = Regex::new(
         r"https?://(?:(?:(?:www\.)?youtube\.com/watch\?v=)|(?:youtu.be/))([a-zA-Z0-9_-]{11})"
     ).unwrap();
@@ -35,6 +37,11 @@ pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> 
     if let Some(m) = IMGUR_GALLERY.captures(url) {
         let id = &m[1];
         return Ok(Some(imgur::gallery(webs, id)?));
+    }
+
+    if let Some(m) = TWITTER_TWEET.captures(url) {
+        let id = &m[1];
+        return Ok(Some(twitter::tweet(webs, id)?));
     }
 
     if let Some(m) = YOUTUBE_VIDEO.captures(url) {

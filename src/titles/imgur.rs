@@ -248,7 +248,7 @@ mod tests {
             })
         }
 
-        fn twitter_get(&mut self, sub: &str) -> Result<Value, Error> {
+        fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
             unimplemented!()
         }
 

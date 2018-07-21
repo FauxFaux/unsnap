@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io;
 use std::io::Read;
@@ -16,7 +17,7 @@ use config::Config;
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error>;
-    fn twitter_get(&mut self, sub: &str) -> Result<Value, Error>;
+    fn twitter_get(&self, sub: &str) -> Result<Value, Error>;
     fn youtube_get(&self, url_suffix: &str, body: &HashMap<&str, &str>) -> Result<Value, Error>;
     fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error>;
 }
@@ -24,7 +25,7 @@ pub trait Webs {
 pub struct Internet {
     config: Config,
     client: Client,
-    twitter_token: Option<String>,
+    twitter_token: RefCell<Option<String>>,
 }
 
 pub struct Resp {
@@ -36,7 +37,7 @@ impl Internet {
         Internet {
             config,
             client: Client::new(),
-            twitter_token: None,
+            twitter_token: RefCell::default(),
         }
     }
 }
@@ -55,14 +56,14 @@ impl Webs for Internet {
             .context("bad json from imgur")?)
     }
 
-    fn twitter_get(&mut self, sub: &str) -> Result<Value, Error> {
-        if self.twitter_token.is_none() {
+    fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
+        if self.twitter_token.borrow().is_none() {
             self.update_twitter_token()?;
         }
         Ok(self
             .client
             .get(&format!("https://api.twitter.com/{}", sub))
-            .header(Authorization(self.twitter_token.clone().unwrap()))
+            .header(Authorization(self.twitter_token.borrow().clone().unwrap()))
             .send()?
             .json()
             .context("bad json from twitter")?)
@@ -96,7 +97,7 @@ impl Webs for Internet {
 }
 
 impl Internet {
-    fn update_twitter_token(&mut self) -> Result<(), Error> {
+    fn update_twitter_token(&self) -> Result<(), Error> {
         let token_body: Value = self
             .client
             .post("https://api.twitter.com/oauth2/token")
@@ -126,7 +127,8 @@ impl Internet {
 
         if let Some(val) = token_body.get("access_token") {
             if let Some(token) = val.as_str() {
-                self.twitter_token = Some(format!("Bearer {}", token));
+                self.twitter_token
+                    .replace(Some(format!("Bearer {}", token)));
                 Ok(())
             } else {
                 bail!(
