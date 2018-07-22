@@ -112,34 +112,32 @@ impl Internet {
             .json()
             .context("bad json from twitter auth")?;
 
-        if let Some(val) = token_body.get("token_type") {
-            match val.as_str() {
-                Some("bearer") => (),
-                other => bail!(
-                    "invalid token_type in oauth response: {:?} {:?}",
-                    other,
-                    token_body
-                ),
-            }
-        } else {
-            bail!("no token type in oauth response: {:?}", token_body);
-        }
+        self.twitter_token.replace(Some(format!(
+            "Bearer {}",
+            extract_token(&token_body)
+                .with_context(|_| format_err!("processing oauth response: {:?}", token_body))?
+        )));
 
-        if let Some(val) = token_body.get("access_token") {
-            if let Some(token) = val.as_str() {
-                self.twitter_token
-                    .replace(Some(format!("Bearer {}", token)));
-                Ok(())
-            } else {
-                bail!(
-                    "non-string bearer token in oauth response: {:?}",
-                    token_body
-                )
-            }
-        } else {
-            bail!("no access_token in oauth response: {:?}", token_body)
-        }
+        Ok(())
     }
+}
+
+fn extract_token(token_body: &Value) -> Result<String, Error> {
+    if token_body
+        .get("token_type")
+        .ok_or_else(|| format_err!("no token_type"))?
+        .as_str()
+        .ok_or_else(|| format_err!("non-string token_type"))? != "bearer"
+    {
+        bail!("invalid/missing token_type in oauth response");
+    }
+
+    Ok(token_body
+        .get("access_token")
+        .ok_or_else(|| format_err!("no access_token"))?
+        .as_str()
+        .ok_or_else(|| format_err!("non-string bearer token"))?
+        .to_string())
 }
 
 impl Read for Resp {
