@@ -7,7 +7,7 @@ use failure::Error;
 use regex::Regex;
 use result::ResultOptionExt;
 
-use webs::Webs;
+use crate::webs::Webs;
 
 lazy_static! {
     static ref URL: Regex = Regex::new("https?://[^ ]+").unwrap();
@@ -19,7 +19,8 @@ lazy_static! {
         Regex::new(r"https?://(?:www\.)?twitter.com/(?:[^/]+)/status/(\d{16,25})").unwrap();
     static ref YOUTUBE_VIDEO: Regex = Regex::new(
         r"https?://(?:(?:(?:www\.)?youtube\.com/watch\?v=)|(?:youtu.be/))([a-zA-Z0-9_-]{11})"
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String, Error>> {

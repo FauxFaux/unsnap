@@ -5,14 +5,14 @@ use std::io::Read;
 
 use failure::Error;
 use failure::ResultExt;
-use reqwest::header::Authorization;
+use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
 use reqwest::IntoUrl;
 use reqwest::Response;
 use reqwest::Url;
 use serde_json::Value;
 
-use config::Config;
+use crate::config::Config;
 
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
 pub trait Webs {
@@ -47,10 +47,10 @@ impl Webs for Internet {
         Ok(self
             .client
             .get(&format!("https://api.imgur.com/3/{}", sub))
-            .header(Authorization(format!(
-                "Client-ID {}",
-                &self.config.keys.imgur_client_id
-            )))
+            .header(
+                AUTHORIZATION,
+                format!("Client-ID {}", &self.config.keys.imgur_client_id),
+            )
             .send()?
             .json()
             .context("bad json from imgur")?)
@@ -63,7 +63,7 @@ impl Webs for Internet {
         Ok(self
             .client
             .get(&format!("https://api.twitter.com/{}", sub))
-            .header(Authorization(self.twitter_token.borrow().clone().unwrap()))
+            .header(AUTHORIZATION, self.twitter_token.borrow().clone().unwrap())
             .send()?
             .json()
             .context("bad json from twitter")?)
@@ -80,7 +80,8 @@ impl Webs for Internet {
         let url = Url::parse_with_params(
             &format!("https://www.googleapis.com/youtube/{}", url_suffix),
             args,
-        ).unwrap();
+        )
+        .unwrap();
 
         Ok(self
             .client
@@ -127,7 +128,8 @@ fn extract_token(token_body: &Value) -> Result<String, Error> {
         .get("token_type")
         .ok_or_else(|| format_err!("no token_type"))?
         .as_str()
-        .ok_or_else(|| format_err!("non-string token_type"))? != "bearer"
+        .ok_or_else(|| format_err!("non-string token_type"))?
+        != "bearer"
     {
         bail!("invalid/missing token_type in oauth response");
     }

@@ -1,12 +1,11 @@
 use std::time::Duration;
 
 use chrono::DateTime;
-use chrono::Utc;
 use failure::Error;
 use serde_json::Value;
 use time_parse::duration;
 
-use webs::Webs;
+use crate::webs::Webs;
 
 pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.youtube_get(
@@ -71,8 +70,8 @@ mod tests {
     use serde_json;
     use serde_json::Value;
 
-    use webs::Resp;
-    use webs::Webs;
+    use crate::webs::Resp;
+    use crate::webs::Webs;
 
     struct YoutubeTest;
 
@@ -81,7 +80,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
+        fn twitter_get(&self, _sub: &str) -> Result<Value, Error> {
             unimplemented!()
         }
 
@@ -93,9 +92,10 @@ mod tests {
             assert_eq!("v3/videos", url_suffix);
             let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
             Ok(match body {
-                val if *val == aiweechoo => serde_json::from_str(include_str!(
-                    "../../tests/youtube-aiweechoo.json"
-                )).unwrap(),
+                val if *val == aiweechoo => {
+                    serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json"))
+                        .unwrap()
+                }
                 body => unimplemented!("test bug: {:?}", body),
             })
         }

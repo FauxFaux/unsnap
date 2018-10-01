@@ -1,10 +1,7 @@
-use std::borrow::Cow;
-
 use failure::Error;
 use regex::Regex;
-use serde_json::Value;
 
-use webs::Webs;
+use crate::webs::Webs;
 
 lazy_static! {
     static ref CHAINED_NEWLINES: Regex = Regex::new(r"¶(?:\s*¶)+").unwrap();
@@ -54,8 +51,8 @@ mod tests {
     use serde_json;
     use serde_json::Value;
 
-    use webs::Resp;
-    use webs::Webs;
+    use crate::webs::Resp;
+    use crate::webs::Webs;
 
     struct TwitterTest;
 
@@ -80,8 +77,8 @@ mod tests {
 
         fn youtube_get(
             &self,
-            url_suffix: &str,
-            body: &HashMap<&str, &str>,
+            _url_suffix: &str,
+            _body: &HashMap<&str, &str>,
         ) -> Result<Value, Error> {
             unimplemented!()
         }

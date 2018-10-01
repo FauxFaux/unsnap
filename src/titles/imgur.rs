@@ -1,7 +1,7 @@
 use failure::Error;
 use serde_json::Value;
 
-use webs::Webs;
+use crate::webs::Webs;
 
 pub fn image<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.imgur_get(&format!("image/{}", id))?;
@@ -144,8 +144,8 @@ mod tests {
     use serde_json;
     use serde_json::Value;
 
-    use webs::Resp;
-    use webs::Webs;
+    use crate::webs::Resp;
+    use crate::webs::Webs;
 
     const STRAIGHT_IMAGE: &str = r#"
         {"data":{"id":"TUgcjTQ","title":null,"description":null,"datetime":1517869892,
@@ -248,19 +248,19 @@ mod tests {
             })
         }
 
-        fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
+        fn twitter_get(&self, _sub: &str) -> Result<Value, Error> {
             unimplemented!()
         }
 
         fn youtube_get(
             &self,
-            url_suffix: &str,
-            body_suffix: &HashMap<&str, &str>,
+            _url_suffix: &str,
+            _body_suffix: &HashMap<&str, &str>,
         ) -> Result<Value, Error> {
             unimplemented!()
         }
 
-        fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error> {
+        fn raw_get<U: IntoUrl>(&self, _url: U) -> Result<Resp, Error> {
             unimplemented!()
         }
     }

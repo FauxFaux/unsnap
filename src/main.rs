@@ -26,7 +26,7 @@ mod webs;
 use failure::Error;
 use irc::client::prelude::*;
 
-use webs::Webs;
+use crate::webs::Webs;
 
 fn main() -> Result<(), Error> {
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
@@ -61,9 +61,11 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
     println!("<- {:?}", message);
 
     match message.command {
-        Command::PRIVMSG(ref dest, ref msg) => if let Some(nick) = message.source_nickname() {
-            process_msg(webs, nick, &msg, |s| Ok(client.send_notice(dest, s)?))?
-        },
+        Command::PRIVMSG(ref dest, ref msg) => {
+            if let Some(nick) = message.source_nickname() {
+                process_msg(webs, nick, &msg, |s| Ok(client.send_notice(dest, s)?))?
+            }
+        }
         _ => (),
     }
 

@@ -2,7 +2,7 @@ use failure::Error;
 use iowrap::ReadMany;
 use twoway;
 
-use webs::Webs;
+use crate::webs::Webs;
 
 pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let mut resp = webs.raw_get(url)?;
