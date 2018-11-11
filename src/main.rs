@@ -18,11 +18,14 @@ extern crate result;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate subprocess;
+extern crate tempfile;
 extern crate time_parse;
 extern crate toml;
 extern crate twoway;
 
 mod config;
+mod danger;
 mod files;
 mod titles;
 mod webs;
@@ -88,6 +91,18 @@ fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Res
 where
     F: FnMut(&str) -> Result<(), Error>,
 {
+    if msg.starts_with("!qalc ") {
+        let input = &msg["!qalc".len()..];
+        match danger::qalc(input) {
+            Ok(resp) => write(&format!("{}: {}", nick, limit_length(&resp)))?,
+            Err(e) => {
+                write(&format!("{}: It did not work.", nick))?;
+                error!("qalc {:?} failed: {:?}", input, e);
+            }
+        }
+        return Ok(());
+    }
+
     for title in titles::titles_for(webs, msg) {
         let title = title?;
         write(&format!("{}: {}", nick, limit_length(&title)))?;

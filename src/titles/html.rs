@@ -3,8 +3,8 @@ use failure::Error;
 use iowrap::ReadMany;
 use twoway;
 
+use crate::titles::show_size;
 use crate::webs::Webs;
-use titles::show_size;
 
 pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let mut resp = webs.raw_get(url)?;

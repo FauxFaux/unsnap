@@ -1,8 +1,8 @@
 use failure::Error;
 use serde_json::Value;
 
+use crate::titles::show_size;
 use crate::webs::Webs;
-use titles::show_size;
 
 pub fn image<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.imgur_get(&format!("image/{}", id))?;
