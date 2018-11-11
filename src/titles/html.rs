@@ -19,16 +19,20 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
         Err(e) => {
             if buf.len() < PREVIEW_BYTES {
                 info!("no title found for {:?} ({}), but we read it all", url, e);
-                Ok(show_size(f64(buf.len())))
+                Ok(no_title_size(f64(buf.len())))
             } else if let Some(len) = resp.content_length() {
                 info!("no title found for {:?} ({}), but it had a length", url, e);
-                Ok(show_size(len))
+                Ok(no_title_size(len))
             } else {
                 info!("no title found for {:?} ({}), and no length guess", url, e);
                 Err(format_err!("no title and overly long: {}", e))
             }
         }
     }
+}
+
+fn no_title_size(size: f64) -> String {
+    format!("No title found. Size: {}", show_size(size))
 }
 
 fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
