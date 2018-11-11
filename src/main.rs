@@ -107,7 +107,7 @@ where
 
     for title in titles::titles_for(webs, msg) {
         let title = title?;
-        write(&format!("{}: {}", nick, limit_length(&title)))?;
+        write(&limit_length(&title))?;
     }
     Ok(())
 }

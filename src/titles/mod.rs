@@ -11,6 +11,7 @@ use crate::webs::Webs;
 
 lazy_static! {
     static ref URL: Regex = Regex::new("https?://[^ ]+").unwrap();
+    static ref HOSTNAME: Regex = Regex::new("https?://((?:[^/:]+)|(?:\\[[a-f0-9:]+\\]))").unwrap();
     static ref IMGUR_IMAGE: Regex =
         Regex::new(r"https?://(?:i\.)?imgur\.com/([a-zA-Z0-9]{5,9})\.(?:jpg|mp4|webm|png|gif)")
             .unwrap();
@@ -26,7 +27,11 @@ lazy_static! {
 
 pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String, Error>> {
     URL.find_iter(line)
-        .filter_map(|url| title_for(webs, url.as_str()).invert())
+        .filter_map(|url| {
+            title_for(webs, url.as_str())
+                .map(|maybe| maybe.map(|title| format!("{}: {}", hostname(url.as_str()), title)))
+                .invert()
+        })
         .collect()
 }
 
@@ -59,6 +64,14 @@ pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> 
         .ok())
 }
 
+fn hostname(url: &str) -> &str {
+    HOSTNAME
+        .captures(url)
+        .and_then(|caps| caps.get(1))
+        .map(|ma| ma.as_str())
+        .unwrap_or("[invalid url]")
+}
+
 fn show_size(val: f64) -> String {
     use number_prefix::binary_prefix;
     use number_prefix::Prefixed;
@@ -85,5 +98,11 @@ mod tests {
                 // includes group 0
                 - 1
         )
+    }
+
+    #[test]
+    fn hostname_extraction() {
+        use super::hostname;
+        assert_eq!("imgur.com", hostname("https://imgur.com/a/foo"));
     }
 }
