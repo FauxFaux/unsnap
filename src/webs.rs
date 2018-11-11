@@ -142,6 +142,16 @@ fn extract_token(token_body: &Value) -> Result<String, Error> {
         .to_string())
 }
 
+impl Resp {
+    pub fn content_length(&self) -> Option<f64> {
+        self.inner
+            .headers()
+            .get("Content-Length")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse().ok())
+    }
+}
+
 impl Read for Resp {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)

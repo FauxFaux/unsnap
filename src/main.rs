@@ -1,3 +1,4 @@
+extern crate cast;
 extern crate chrono;
 #[macro_use]
 extern crate failure;
@@ -7,8 +8,11 @@ extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate maplit;
 extern crate number_prefix;
+extern crate pretty_env_logger;
 extern crate reqwest;
 extern crate result;
 #[macro_use]
@@ -29,6 +33,8 @@ use irc::client::prelude::*;
 use crate::webs::Webs;
 
 fn main() -> Result<(), Error> {
+    pretty_env_logger::try_init()?;
+
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
 
     let irc_config = irc::client::prelude::Config {
@@ -48,7 +54,7 @@ fn main() -> Result<(), Error> {
 
     async_bullshit.register_client_with_handler(client, move |client, message| {
         if let Err(e) = handle(&webs, client, &message) {
-            eprintln!("processing error: {:?}: {:?}", message, e);
+            warn!("processing error: {:?}: {:?}", message, e);
         }
         Ok(())
     });
@@ -58,7 +64,7 @@ fn main() -> Result<(), Error> {
 }
 
 fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<(), Error> {
-    println!("<- {:?}", message);
+    trace!("<- {:?}", message);
 
     match message.command {
         Command::PRIVMSG(ref dest, ref msg) => {

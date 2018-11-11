@@ -2,6 +2,7 @@ use failure::Error;
 use serde_json::Value;
 
 use crate::webs::Webs;
+use titles::show_size;
 
 pub fn image<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.imgur_get(&format!("image/{}", id))?;
@@ -122,17 +123,6 @@ fn preferred_size(data: &Value) -> Option<f64> {
 
 fn try_f64(data: &Value, key: &str) -> Option<f64> {
     data.get(key).and_then(|s| s.as_f64())
-}
-
-fn show_size(val: f64) -> String {
-    use number_prefix::binary_prefix;
-    use number_prefix::Prefixed;
-    use number_prefix::Standalone;
-
-    match binary_prefix(val) {
-        Standalone(bytes) => format!("{} bytes", bytes),
-        Prefixed(prefix, n) => format!("{:.1}{}B", n, prefix),
-    }
 }
 
 #[cfg(test)]

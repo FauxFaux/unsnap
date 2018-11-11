@@ -1,29 +1,49 @@
+use cast::f64;
 use failure::Error;
 use iowrap::ReadMany;
 use twoway;
 
 use crate::webs::Webs;
+use titles::show_size;
 
 pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let mut resp = webs.raw_get(url)?;
+    const PREVIEW_BYTES: usize = 16 * 4096;
 
-    let mut buf = [0u8; 16 * 4096];
+    let mut buf = [0u8; PREVIEW_BYTES];
     let found = resp.read_many(&mut buf)?;
     let buf = &buf[..found];
 
-    parse_html(buf)
+    match parse_html(buf) {
+        Ok(title) => Ok(title),
+        Err(e) => {
+            if buf.len() < PREVIEW_BYTES {
+                info!("no title found for {:?} ({}), but we read it all", url, e);
+                Ok(show_size(f64(buf.len())))
+            } else if let Some(len) = resp.content_length() {
+                info!("no title found for {:?} ({}), but it had a length", url, e);
+                Ok(show_size(len))
+            } else {
+                info!("no title found for {:?} ({}), and no length guess", url, e);
+                Err(format_err!("no title and overly long: {}", e))
+            }
+        }
+    }
 }
 
-fn parse_html(buf: &[u8]) -> Result<String, Error> {
+fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
     // I'm not parsing HTML with regex.
     // It took me about four hours to write this code.
     // Not in coding time. In hating myself.
 
-    let buf = &buf[twoway::find_bytes(buf, b"<title").ok_or(format_err!("no title"))?..];
-    let buf = &buf[find_byte(buf, b'>').ok_or(format_err!("no title tag terminator"))?..];
-    ensure!(!buf.is_empty(), "title starts at end of sub-document");
+    let buf = &buf[twoway::find_bytes(buf, b"<title").ok_or("no title")?..];
+    let buf = &buf[find_byte(buf, b'>').ok_or("no title tag terminator")?..];
+    if buf.is_empty() {
+        return Err("title starts at end of sub-document");
+    }
+
     let buf = &buf[1..];
-    let buf = &buf[..find_byte(buf, b'<').ok_or(format_err!("no title terminator"))?];
+    let buf = &buf[..find_byte(buf, b'<').ok_or("no title terminator")?];
 
     Ok(String::from_utf8_lossy(buf).to_string())
 }

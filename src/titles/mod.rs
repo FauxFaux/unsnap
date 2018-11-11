@@ -50,5 +50,21 @@ pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> 
         return Ok(Some(youtube::video(webs, id)?));
     }
 
-    Ok(html::process(webs, url).ok())
+    Ok(html::process(webs, url)
+        .map_err(|e| {
+            info!("gave up processing url {:?}: {:?}", url, e);
+            return e;
+        })
+        .ok())
+}
+
+fn show_size(val: f64) -> String {
+    use number_prefix::binary_prefix;
+    use number_prefix::Prefixed;
+    use number_prefix::Standalone;
+
+    match binary_prefix(val) {
+        Standalone(bytes) => format!("{} bytes", bytes),
+        Prefixed(prefix, n) => format!("{:.1}{}B", n, prefix),
+    }
 }
