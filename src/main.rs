@@ -46,6 +46,7 @@ fn main() -> Result<(), Error> {
         server: Some(config.server.hostname.to_string()),
         username: config.server.user.clone(),
         channels: Some(config.server.channels.clone()),
+        password: config.server.password.clone(),
         nick_password: config.server.nick_password.clone(),
         ..Default::default()
     };
