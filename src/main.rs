@@ -28,6 +28,7 @@ mod titles;
 mod webs;
 
 use failure::Error;
+use failure::ResultExt;
 use irc::client::prelude::*;
 
 use crate::webs::Webs;
@@ -69,7 +70,12 @@ fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<()
     match message.command {
         Command::PRIVMSG(ref dest, ref msg) => {
             if let Some(nick) = message.source_nickname() {
-                process_msg(webs, nick, &msg, |s| Ok(client.send_notice(dest, s)?))?
+                process_msg(webs, nick, &msg, |s| {
+                    Ok(client
+                        .send_notice(dest, s)
+                        .with_context(|_| format_err!("replying to {:?}", dest))?)
+                })
+                .with_context(|_| format_err!("processing < {:?}> {:?}", nick, msg))?
             }
         }
         _ => (),
