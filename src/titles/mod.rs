@@ -12,7 +12,8 @@ use crate::webs::Webs;
 lazy_static! {
     static ref URL: Regex = Regex::new("https?://[^ ]+").unwrap();
     static ref IMGUR_IMAGE: Regex =
-        Regex::new(r"https?://i\.imgur\.com/([a-zA-Z0-9]{5,9})\.(?:jpg|mp4|webm|png|gif)").unwrap();
+        Regex::new(r"https?://(?:i\.)?imgur\.com/([a-zA-Z0-9]{5,9})\.(?:jpg|mp4|webm|png|gif)")
+            .unwrap();
     static ref IMGUR_GALLERY: Regex =
         Regex::new(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/([a-zA-Z0-9]{5,7})").unwrap();
     static ref TWITTER_TWEET: Regex =
@@ -66,5 +67,23 @@ fn show_size(val: f64) -> String {
     match binary_prefix(val) {
         Standalone(bytes) => format!("{} bytes", bytes),
         Prefixed(prefix, n) => format!("{:.1}{}B", n, prefix),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::IMGUR_IMAGE;
+
+    #[test]
+    fn imgur_image() {
+        assert_eq!(
+            1,
+            IMGUR_IMAGE
+                .captures("yellow https://imgur.com/ZbIiLa9.mp4 snow")
+                .unwrap()
+                .len()
+                // includes group 0
+                - 1
+        )
     }
 }
