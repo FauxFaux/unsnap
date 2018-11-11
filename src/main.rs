@@ -90,7 +90,17 @@ where
 {
     for title in titles::titles_for(webs, msg) {
         let title = title?;
-        write(&format!("{}: {}", nick, title))?;
+        write(&format!("{}: {}", nick, limit_length(&title)))?;
     }
     Ok(())
+}
+
+fn limit_length(val: &str) -> &str {
+    for end in 365..400 {
+        if val.is_char_boundary(end) {
+            return &val[..end];
+        }
+    }
+
+    val
 }
