@@ -14,6 +14,7 @@ pub struct Server {
     pub nick: String,
     pub user: Option<String>,
     pub real_name: Option<String>,
+    pub nick_password: Option<String>,
 
     pub channels: Vec<String>,
 }
