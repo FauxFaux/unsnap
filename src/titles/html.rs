@@ -48,8 +48,14 @@ fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
 
     let buf = &buf[1..];
     let buf = &buf[..find_byte(buf, b'<').ok_or("no title terminator")?];
-
-    Ok(String::from_utf8_lossy(buf).to_string())
+    let title = String::from_utf8_lossy(buf);
+    Ok(match htmlescape::decode_html(&title) {
+        Ok(decoded) => decoded,
+        Err(e) => {
+            info!("invalid html escape: {:?}: {:?}", title, e);
+            title.to_string()
+        }
+    })
 }
 
 #[inline]
@@ -66,6 +72,13 @@ mod tests {
         assert_eq!(
             "ponies",
             parse_html(b"<html><head><title>ponies</title></head><body></body></html>")
+                .unwrap()
+                .as_str()
+        );
+
+        assert_eq!(
+            "'",
+            parse_html(b"<html><head><title>&#x27;</title></head><body></body></html>")
                 .unwrap()
                 .as_str()
         );

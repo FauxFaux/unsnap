@@ -2,6 +2,7 @@ extern crate cast;
 extern crate chrono;
 #[macro_use]
 extern crate failure;
+extern crate htmlescape;
 extern crate iowrap;
 extern crate irc;
 extern crate regex;
