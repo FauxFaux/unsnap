@@ -28,6 +28,3 @@ tempfile = "3"
 time-parse = "0.1"
 toml = "0.4"
 twoway = "0.1"
-
-[profile.release]
-lto = true
