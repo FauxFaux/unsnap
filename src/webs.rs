@@ -150,6 +150,13 @@ impl Resp {
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.parse().ok())
     }
+
+    pub fn content_type(&self) -> Option<&str> {
+        self.inner
+            .headers()
+            .get("Content-Type")
+            .and_then(|v| v.to_str().ok())
+    }
 }
 
 impl Read for Resp {

@@ -3,6 +3,7 @@ use failure::Error;
 use iowrap::ReadMany;
 use twoway;
 
+use super::strip_whitespace;
 use crate::titles::show_size;
 use crate::webs::Webs;
 
@@ -15,24 +16,31 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let buf = &buf[..found];
 
     match parse_html(buf) {
-        Ok(title) => Ok(title),
-        Err(e) => {
-            if buf.len() < PREVIEW_BYTES {
-                info!("no title found for {:?} ({}), but we read it all", url, e);
-                Ok(no_title_size(f64(buf.len())))
-            } else if let Some(len) = resp.content_length() {
-                info!("no title found for {:?} ({}), but it had a length", url, e);
-                Ok(no_title_size(len))
-            } else {
-                info!("no title found for {:?} ({}), and no length guess", url, e);
-                Err(format_err!("no title and overly long: {}", e))
-            }
-        }
+        Ok(ref title) if !strip_whitespace(title).is_empty() => return Ok(title.to_owned()),
+        Ok(_empty) => (),
+        Err(e) => info!("no title found for {:?}: {}", url, e),
     }
-}
 
-fn no_title_size(size: f64) -> String {
-    format!("No title found. Size: {}", show_size(size))
+    let len = if buf.len() < PREVIEW_BYTES {
+        Some(f64(buf.len()))
+    } else if let Some(len) = resp.content_length() {
+        Some(len)
+    } else {
+        None
+    };
+
+    let content_type = resp.content_type();
+
+    let mut ret = "No title found.".to_string();
+    if let Some(content_type) = content_type {
+        ret.push_str(&format!(" Content-type: {}.", content_type));
+    }
+
+    if let Some(len) = len {
+        ret.push_str(&format!(" Size: {}.", show_size(len)));
+    }
+
+    Ok(ret)
 }
 
 fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
