@@ -33,7 +33,11 @@ pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String, Error>> {
             title_for(webs, url.as_str())
                 .map(|maybe| {
                     maybe.map(|title| {
-                        format!("{}: {}", hostname(url.as_str()), strip_whitespace(&title))
+                        format!(
+                            "[ {} - {} ]",
+                            hostname(url.as_str()),
+                            strip_whitespace(&title)
+                        )
                     })
                 })
                 .invert()
