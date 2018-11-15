@@ -23,19 +23,25 @@ lazy_static! {
         r"https?://(?:(?:(?:www\.)?youtube\.com/watch\?v=)|(?:youtu.be/))([a-zA-Z0-9_-]{11})"
     )
     .unwrap();
+    static ref CHAINED_NEWLINES: Regex = Regex::new(r"¶(?:\s*¶)+").unwrap();
+    static ref REPEATED_SPACE: Regex = Regex::new(r"\s{2,}").unwrap();
 }
 
 pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String, Error>> {
     URL.find_iter(line)
         .filter_map(|url| {
             title_for(webs, url.as_str())
-                .map(|maybe| maybe.map(|title| format!("{}: {}", hostname(url.as_str()), title)))
+                .map(|maybe| {
+                    maybe.map(|title| {
+                        format!("{}: {}", hostname(url.as_str()), strip_whitespace(&title))
+                    })
+                })
                 .invert()
         })
         .collect()
 }
 
-pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
+fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
     if let Some(m) = IMGUR_IMAGE.captures(url) {
         let id = &m[1];
         return Ok(Some(imgur::image(webs, id)?));
@@ -57,6 +63,7 @@ pub fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> 
     }
 
     Ok(html::process(webs, url)
+        .map(|s| strip_whitespace(&s))
         .map_err(|e| {
             info!("gave up processing url {:?}: {:?}", url, e);
             return e;
@@ -83,6 +90,19 @@ fn show_size(val: f64) -> String {
     }
 }
 
+fn strip_whitespace(text: &str) -> String {
+    let text = text.replace(|c: char| c.is_control() || c.is_whitespace(), " ");
+    let text = text.trim();
+    REPEATED_SPACE.replace_all(text, " ").to_string()
+}
+
+fn cleanup_newlines(text: &str) -> String {
+    let text = text.trim();
+    let text = text.replace(|c: char| c.is_control(), " ¶ ");
+    let text = CHAINED_NEWLINES.replace_all(&text, " ¶ ");
+    REPEATED_SPACE.replace_all(&text, " ").to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::IMGUR_IMAGE;
@@ -104,5 +124,18 @@ mod tests {
     fn hostname_extraction() {
         use super::hostname;
         assert_eq!("imgur.com", hostname("https://imgur.com/a/foo"));
+    }
+
+    #[test]
+    fn new_lines() {
+        use super::cleanup_newlines;
+        assert_eq!("foo ¶ bar", cleanup_newlines("foo\n \n   bar"));
+    }
+
+    #[test]
+    fn strip() {
+        use super::strip_whitespace;
+        assert_eq!("foo bar", strip_whitespace("  \n  foo  bar    \n"));
+        assert_eq!("foo bar", strip_whitespace("foo \0 \x06 \u{009f} bar"));
     }
 }

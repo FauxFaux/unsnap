@@ -108,6 +108,7 @@ where
 
     for title in titles::titles_for(webs, msg) {
         let title = title?;
+        assert!(!title.contains(|c: char| c.is_control()));
         write(&limit_length(&title))?;
     }
     Ok(())

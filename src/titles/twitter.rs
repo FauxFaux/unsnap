@@ -1,12 +1,6 @@
 use failure::Error;
-use regex::Regex;
 
 use crate::webs::Webs;
-
-lazy_static! {
-    static ref CHAINED_NEWLINES: Regex = Regex::new(r"¶(?:\s*¶)+").unwrap();
-    static ref REPEATED_SPACE: Regex = Regex::new(r"\s{2,}").unwrap();
-}
 
 pub fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = webs.twitter_get(&format!(
@@ -14,7 +8,7 @@ pub fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
         id
     ))?;
 
-    let text = cleanup_newlines(
+    let text = super::cleanup_newlines(
         resp.get("full_text")
             .ok_or_else(|| format_err!("missing text"))?
             .as_str()
@@ -34,12 +28,6 @@ pub fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
         .ok_or_else(|| format_err!("user name not text"))?;
 
     Ok(format!("{} — {}", name, text))
-}
-
-fn cleanup_newlines(text: &str) -> String {
-    let text = text.replace(|c: char| c.is_ascii_control(), " ¶ ");
-    let text = CHAINED_NEWLINES.replace_all(&text, " ¶ ");
-    REPEATED_SPACE.replace_all(&text, " ").to_string()
 }
 
 #[cfg(test)]
@@ -86,12 +74,6 @@ mod tests {
         fn raw_get<U: IntoUrl>(&self, _url: U) -> Result<Resp, Error> {
             unimplemented!()
         }
-    }
-
-    #[test]
-    fn new_lines() {
-        use super::cleanup_newlines;
-        assert_eq!("foo ¶ bar", cleanup_newlines("foo\n \n   bar"));
     }
 
     #[test]
