@@ -9,7 +9,7 @@ use crate::webs::Webs;
 
 pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let mut resp = webs.raw_get(url)?;
-    const PREVIEW_BYTES: usize = 16 * 4096;
+    const PREVIEW_BYTES: usize = 64 * 4096;
 
     let mut buf = [0u8; PREVIEW_BYTES];
     let found = resp.read_many(&mut buf)?;
