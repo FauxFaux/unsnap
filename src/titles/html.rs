@@ -48,7 +48,7 @@ fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
     // It took me about four hours to write this code.
     // Not in coding time. In hating myself.
 
-    let buf = &buf[twoway::find_bytes(buf, b"<title").ok_or("no title")?..];
+    let buf = &buf[find_string(buf, b"<title").ok_or("no title")?..];
     let buf = &buf[find_byte(buf, b'>').ok_or("no title tag terminator")?..];
     if buf.is_empty() {
         return Err("title starts at end of sub-document");
@@ -67,6 +67,21 @@ fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
 }
 
 #[inline]
+fn find_string(buf: &[u8], string: &[u8]) -> Option<usize> {
+    if buf.len() < string.len() {
+        return None;
+    }
+
+    for i in 0..=buf.len() - string.len() {
+        if buf[i..][..string.len()].eq_ignore_ascii_case(string) {
+            return Some(i);
+        }
+    }
+
+    None
+}
+
+#[inline]
 fn find_byte(buf: &[u8], byte: u8) -> Option<usize> {
     twoway::find_bytes(buf, &[byte])
 }
@@ -75,11 +90,34 @@ fn find_byte(buf: &[u8], byte: u8) -> Option<usize> {
 mod tests {
     use super::parse_html;
 
+    use super::find_string;
+
+    #[test]
+    fn finder() {
+        assert_eq!(None, find_string(b"hello", b"cat"));
+        assert_eq!(Some(1), find_string(b"hello", b"ello"));
+        assert_eq!(Some(1), find_string(b"hello", b"e"));
+        assert_eq!(Some(1), find_string(b"he", b"e"));
+        assert_eq!(Some(1), find_string(b"hel", b"el"));
+        assert_eq!(Some(4), find_string(b"hello", b"o"));
+        assert_eq!(Some(0), find_string(b"hello", b"hello"));
+        assert_eq!(Some(0), find_string(b"hello", b"h"));
+        assert_eq!(Some(0), find_string(b"h", b"h"));
+        assert_eq!(Some(0), find_string(b"HeLLo", b"heLlo"));
+    }
+
     #[test]
     fn html() {
         assert_eq!(
             "ponies",
             parse_html(b"<html><head><title>ponies</title></head><body></body></html>")
+                .unwrap()
+                .as_str()
+        );
+
+        assert_eq!(
+            "ponies",
+            parse_html(b"<html><head><TITle>ponies</TITLE></head><body></body></html>")
                 .unwrap()
                 .as_str()
         );
