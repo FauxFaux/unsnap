@@ -2,11 +2,13 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io;
 use std::io::Read;
+use std::time;
 
 use failure::Error;
 use failure::ResultExt;
 use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
+use reqwest::ClientBuilder;
 use reqwest::IntoUrl;
 use reqwest::Response;
 use reqwest::Url;
@@ -34,12 +36,33 @@ pub struct Resp {
 
 impl Internet {
     pub fn new(config: Config) -> Internet {
+        let mut headers = reqwest::header::HeaderMap::new();
+        let ua = chrome_ua();
+        info!("UA: {}", ua);
+        headers.insert("User-Agent", ua.parse().unwrap());
         Internet {
             config,
-            client: Client::new(),
+            client: ClientBuilder::new()
+                .default_headers(headers)
+                .build()
+                .unwrap(),
             twitter_token: RefCell::default(),
         }
     }
+}
+
+fn chrome_ua() -> String {
+    let now = epoch_secs();
+    let apple = (now - 800_000_000) / 1_400_212;
+    let chrome = (now - 1_234_567_890) / 4_400_212;
+    format!(
+        concat!(
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/{apple}.36 ",
+            "(KHTML, like Gecko) Chrome/{chrome}.0.3538.110 Safari/{apple}.36"
+        ),
+        apple = apple,
+        chrome = chrome
+    )
 }
 
 impl Webs for Internet {
@@ -121,6 +144,13 @@ impl Internet {
 
         Ok(())
     }
+}
+
+fn epoch_secs() -> u64 {
+    time::SystemTime::now()
+        .duration_since(time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
 }
 
 fn extract_token(token_body: &Value) -> Result<String, Error> {
