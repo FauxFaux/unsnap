@@ -1,11 +1,16 @@
 use cast::f64;
 use failure::Error;
 use iowrap::ReadMany;
+use regex::bytes;
 use twoway;
 
 use super::strip_whitespace;
 use crate::titles::show_size;
 use crate::webs::Webs;
+
+lazy_static! {
+    static ref TITLE: bytes::Regex = bytes::Regex::new(r"(?i)<title[^>]*>([^<]*)<").unwrap();
+}
 
 pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let mut resp = webs.raw_get(url)?;
@@ -15,11 +20,14 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
     let found = resp.read_many(&mut buf)?;
     let buf = &buf[..found];
 
-    match parse_html(buf) {
+    let missing = match parse_html(buf) {
         Ok(ref title) if !strip_whitespace(title).is_empty() => return Ok(title.to_owned()),
-        Ok(_empty) => (),
-        Err(e) => info!("no title found for {:?}: {}", url, e),
-    }
+        Ok(_empty) => false,
+        Err(e) => {
+            info!("no title found for {:?}: {}", url, e);
+            true
+        }
+    };
 
     let len = if buf.len() < PREVIEW_BYTES {
         Some(f64(buf.len()))
@@ -31,7 +39,14 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
 
     let content_type = resp.content_type();
 
-    let mut ret = "No title found.".to_string();
+    let ret = if missing {
+        "No title found."
+    } else {
+        "Empty title found."
+    };
+
+    let mut ret = ret.to_string();
+
     if let Some(content_type) = content_type {
         ret.push_str(&format!(" Content-type: {}.", content_type));
     }
@@ -44,19 +59,11 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
 }
 
 fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
-    // I'm not parsing HTML with regex.
-    // It took me about four hours to write this code.
-    // Not in coding time. In hating myself.
+    let title = match TITLE.captures_iter(buf).next() {
+        Some(cap) => String::from_utf8_lossy(&cap[1]).to_string(),
+        None => return Err("no regex match"),
+    };
 
-    let buf = &buf[find_string(buf, b"<title").ok_or("no title")?..];
-    let buf = &buf[find_byte(buf, b'>').ok_or("no title tag terminator")?..];
-    if buf.is_empty() {
-        return Err("title starts at end of sub-document");
-    }
-
-    let buf = &buf[1..];
-    let buf = &buf[..find_byte(buf, b'<').ok_or("no title terminator")?];
-    let title = String::from_utf8_lossy(buf);
     Ok(match htmlescape::decode_html(&title) {
         Ok(decoded) => decoded,
         Err(e) => {
@@ -66,45 +73,9 @@ fn parse_html(buf: &[u8]) -> Result<String, &'static str> {
     })
 }
 
-#[inline]
-fn find_string(buf: &[u8], string: &[u8]) -> Option<usize> {
-    if buf.len() < string.len() {
-        return None;
-    }
-
-    for i in 0..=buf.len() - string.len() {
-        if buf[i..][..string.len()].eq_ignore_ascii_case(string) {
-            return Some(i);
-        }
-    }
-
-    None
-}
-
-#[inline]
-fn find_byte(buf: &[u8], byte: u8) -> Option<usize> {
-    twoway::find_bytes(buf, &[byte])
-}
-
 #[cfg(test)]
 mod tests {
     use super::parse_html;
-
-    use super::find_string;
-
-    #[test]
-    fn finder() {
-        assert_eq!(None, find_string(b"hello", b"cat"));
-        assert_eq!(Some(1), find_string(b"hello", b"ello"));
-        assert_eq!(Some(1), find_string(b"hello", b"e"));
-        assert_eq!(Some(1), find_string(b"he", b"e"));
-        assert_eq!(Some(1), find_string(b"hel", b"el"));
-        assert_eq!(Some(4), find_string(b"hello", b"o"));
-        assert_eq!(Some(0), find_string(b"hello", b"hello"));
-        assert_eq!(Some(0), find_string(b"hello", b"h"));
-        assert_eq!(Some(0), find_string(b"h", b"h"));
-        assert_eq!(Some(0), find_string(b"HeLLo", b"heLlo"));
-    }
 
     #[test]
     fn html() {
@@ -134,6 +105,13 @@ mod tests {
             parse_html(include_bytes!("../../tests/bbc.html"))
                 .unwrap()
                 .as_str()
-        )
+        );
+
+        assert_eq!(
+            "Look Out for New ‘Find Your Place’ Ads This Summer | StreetEasy",
+            parse_html(include_bytes!("../../tests/streeteasy.html"))
+                .unwrap()
+                .as_str()
+        );
     }
 }
