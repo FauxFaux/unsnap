@@ -80,10 +80,7 @@ pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
         let image = &images[0];
         return Ok(format!(
             "{} ፤ {}",
-            image
-                .get("link")
-                .and_then(|s| s.as_str())
-                .ok_or(format_err!("no link on embedded image"))?,
+            preferred_link(image)?,
             image_body(image, Some(gallery_title))?
         ));
     }
@@ -109,6 +106,14 @@ pub fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     }
 
     Ok(title)
+}
+
+fn preferred_link(image: &Value) -> Result<&str, Error> {
+    Ok(image
+        .get("mp4")
+        .or_else(|| image.get("link"))
+        .and_then(|s| s.as_str())
+        .ok_or(format_err!("no link on embedded image"))?)
 }
 
 fn preferred_size(data: &Value) -> Option<f64> {
@@ -198,6 +203,23 @@ mod tests {
         "success":true,"status":200}
     "##;
 
+    const SINGLE_IMAGE_ANIMATED: &str = r##"
+        {"data":{"id":"nRuZwtp","title":"Bango cat","description":null,"datetime":1543508604,
+        "cover":"KbVOQOm","cover_width":580,"cover_height":580,"account_url":"ctilic12110",
+        "account_id":98180053,"privacy":"public","layout":"blog","views":599,
+        "link":"https:\/\/imgur.com\/a\/nRuZwtp","favorite":false,"nsfw":null,"section":null,
+        "images_count":1,"in_gallery":true,"is_ad":false,"include_album_ads":false,
+        "images":[{"id":"KbVOQOm","title":null,"description":null,"datetime":1543508602,
+        "type":"image\/gif","animated":true,"width":580,"height":580,"size":1812159,"views":1820,
+        "bandwidth":3298129380,"vote":null,"favorite":false,"nsfw":null,"section":null,
+        "account_url":null,"account_id":null,"is_ad":false,"in_most_viral":false,"has_sound":false,
+        "tags":[],"ad_type":0,"ad_url":"","in_gallery":false,
+        "link":"https:\/\/i.imgur.com\/KbVOQOm.gif","mp4":"https:\/\/i.imgur.com\/KbVOQOm.mp4",
+        "gifv":"https:\/\/i.imgur.com\/KbVOQOm.gifv","hls":"https:\/\/i.imgur.com\/KbVOQOm.m3u8",
+        "mp4_size":1304498,"looping":true,"processing":{"status":"completed"}}]},"success":true,
+        "status":200}
+    "##;
+
     const MULTI_IMAGE_ALBUM: &str = r##"
         {"data":{"id":"mk0v7",
         "title":"Transformation Tuesday: went from 6xl to 3xl... still got ways to go. Thanks imgur",
@@ -229,6 +251,7 @@ mod tests {
         fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
             Ok(match sub {
                 "album/rTV6u" => serde_json::from_str(SINGLE_IMAGE_ALBUM).unwrap(),
+                "album/nRuZwtp" => serde_json::from_str(SINGLE_IMAGE_ANIMATED).unwrap(),
                 "album/mk0v7" => serde_json::from_str(MULTI_IMAGE_ALBUM).unwrap(),
                 "image/TUgcjTQ" => serde_json::from_str(STRAIGHT_IMAGE).unwrap(),
                 "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
@@ -283,6 +306,11 @@ mod tests {
         assert_eq!(
             "https://i.imgur.com/tUulJaV.jpg ፤ 640×770 87.4KiB ?fw ፤ Branch manager and Assistant Branch manager",
             super::gallery(&mut ImgurTest {}, "rTV6u").unwrap()
+        );
+
+        assert_eq!(
+            "https://i.imgur.com/KbVOQOm.mp4 ፤ 580×580 1.2MiB ?fw ፤ Bango cat",
+            super::gallery(&mut ImgurTest {}, "nRuZwtp").unwrap()
         );
 
         assert_eq!(
