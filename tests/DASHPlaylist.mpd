@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MPD mediaPresentationDuration="PT7.767S" minBufferTime="PT1.500S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
+     type="static" xmlns="urn:mpeg:dash:schema:mpd:2011">
+    <Period duration="PT7.767S">
+        <AdaptationSet segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+            <Representation bandwidth="1178149" codecs="avc1.4d401e" frameRate="30" height="360" id="VIDEO-2"
+                            mimeType="video/mp4" startWithSAP="1" width="360">
+                <BaseURL>DASH_1_2_M</BaseURL>
+                <SegmentBase indexRange="919-974" indexRangeExact="true">
+                    <Initialization range="0-918"/>
+                </SegmentBase>
+            </Representation>
+            <Representation bandwidth="2304736" codecs="avc1.4d401f" frameRate="30" height="480" id="VIDEO-1"
+                            mimeType="video/mp4" startWithSAP="1" width="480">
+                <BaseURL>DASH_2_4_M</BaseURL>
+                <SegmentBase indexRange="918-973" indexRangeExact="true">
+                    <Initialization range="0-917"/>
+                </SegmentBase>
+            </Representation>
+            <Representation bandwidth="601344" codecs="avc1.4d401e" frameRate="30" height="240" id="VIDEO-3"
+                            mimeType="video/mp4" startWithSAP="1" width="240">
+                <BaseURL>DASH_600_K</BaseURL>
+                <SegmentBase indexRange="917-972" indexRangeExact="true">
+                    <Initialization range="0-916"/>
+                </SegmentBase>
+            </Representation>
+        </AdaptationSet>
+    </Period>
+</MPD>

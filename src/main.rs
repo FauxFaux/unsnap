@@ -26,6 +26,7 @@ extern crate toml;
 extern crate twoway;
 
 mod config;
+mod content;
 mod danger;
 mod files;
 mod titles;
