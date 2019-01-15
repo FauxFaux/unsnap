@@ -2,7 +2,6 @@ use cast::f64;
 use failure::Error;
 use iowrap::ReadMany;
 use regex::bytes;
-use twoway;
 
 use super::strip_whitespace;
 use crate::titles::show_size;
