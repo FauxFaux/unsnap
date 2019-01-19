@@ -7,12 +7,12 @@ mod youtube;
 use failure::Error;
 use regex::Regex;
 use result::ResultOptionExt;
+use url::Url;
 
 use crate::webs::Webs;
 
 lazy_static! {
     static ref URL: Regex = Regex::new("https?://[^ ]+").unwrap();
-    static ref HOSTNAME: Regex = Regex::new("https?://((?:[^/:]+)|(?:\\[[a-f0-9:]+\\]))").unwrap();
     static ref IMGUR_IMAGE: Regex =
         Regex::new(r"https?://(?:i\.)?imgur\.com/([a-zA-Z0-9]{5,9})\.(?:jpg|mp4|webm|png|gif)")
             .unwrap();
@@ -82,12 +82,11 @@ fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
         .ok())
 }
 
-fn hostname(url: &str) -> &str {
-    HOSTNAME
-        .captures(url)
-        .and_then(|caps| caps.get(1))
-        .map(|ma| ma.as_str())
-        .unwrap_or("[invalid url]")
+fn hostname(url: &str) -> String {
+    url.parse::<Url>()
+        .ok()
+        .and_then(|url| url.host_str().map(|host| host.to_owned()))
+        .unwrap_or_else(|| "[invalid url]".to_string())
 }
 
 fn show_size(val: f64) -> String {
@@ -135,6 +134,9 @@ mod tests {
     fn hostname_extraction() {
         use super::hostname;
         assert_eq!("imgur.com", hostname("https://imgur.com/a/foo"));
+        assert_eq!("[invalid url]", hostname("/a/foo"));
+        assert_eq!("127.0.0.1", hostname("http://127.0.0.1/a/foo"));
+        assert_eq!("xn--fent-ipa.re", hostname("https://fenêt.re/"));
     }
 
     #[test]
