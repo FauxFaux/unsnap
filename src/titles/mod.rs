@@ -18,7 +18,7 @@ lazy_static! {
             .unwrap();
     static ref IMGUR_GALLERY: Regex =
         Regex::new(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/([a-zA-Z0-9]{5,7})").unwrap();
-    static ref REDDIT_VIDEO: Regex = Regex::new(r"https?://v.redd.it/(\w+)/").unwrap();
+    static ref REDDIT_VIDEO: Regex = Regex::new(r"https?://v.redd.it/(\w+)").unwrap();
     static ref TWITTER_TWEET: Regex =
         Regex::new(r"https?://(?:www\.)?twitter.com/(?:[^/]+)/status/(\d{16,25})").unwrap();
     static ref YOUTUBE_VIDEO: Regex = Regex::new(
