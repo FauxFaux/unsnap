@@ -12,6 +12,8 @@ use tempfile::NamedTempFile;
 pub fn qalc(input: &str) -> Result<String, Error> {
     let mut temp = NamedTempFile::new()?;
 
+    let input = input.replace(" ;; ", "\n");
+
     writeln!(&mut temp, "{}", input)?;
     let path = temp.into_temp_path();
 
