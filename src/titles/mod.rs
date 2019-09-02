@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::webs::Webs;
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref URL: Regex = Regex::new("https?://[^ ]+").unwrap();
     static ref IMGUR_IMAGE: Regex =
         Regex::new(r"https?://(?:i\.)?imgur\.com/([a-zA-Z0-9]{5,9})\.(?:jpg|mp4|webm|png|gif)")

@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::io::Write;
 use std::time::Duration;
 
+use failure::bail;
 use failure::err_msg;
 use failure::Error;
 use subprocess::Popen;

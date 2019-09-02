@@ -1,29 +1,5 @@
-extern crate cast;
-extern crate chrono;
-#[macro_use]
-extern crate failure;
-extern crate htmlescape;
-extern crate iowrap;
-extern crate irc;
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate maplit;
-extern crate number_prefix;
-extern crate pretty_env_logger;
-extern crate reqwest;
-extern crate result;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-extern crate subprocess;
-extern crate tempfile;
-extern crate time_parse;
-extern crate toml;
-extern crate twoway;
 
 mod config;
 mod content;
@@ -32,6 +8,7 @@ mod files;
 mod titles;
 mod webs;
 
+use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use irc::client::prelude::*;

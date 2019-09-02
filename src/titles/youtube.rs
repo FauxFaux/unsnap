@@ -1,7 +1,9 @@
 use std::time::Duration;
 
 use chrono::DateTime;
+use failure::format_err;
 use failure::Error;
+use maplit::hashmap;
 use serde_json::Value;
 use time_parse::duration;
 
@@ -66,6 +68,7 @@ mod tests {
     use std::collections::HashMap;
 
     use failure::Error;
+    use maplit::hashmap;
     use reqwest::IntoUrl;
     use serde_json;
     use serde_json::Value;

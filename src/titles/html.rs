@@ -7,7 +7,7 @@ use super::strip_whitespace;
 use crate::titles::show_size;
 use crate::webs::Webs;
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref TITLE: bytes::Regex = bytes::Regex::new(r"(?i)<title[^>]*>([^<]*)<").unwrap();
 }
 

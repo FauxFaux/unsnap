@@ -4,8 +4,11 @@ use std::io;
 use std::io::Read;
 use std::time;
 
+use failure::bail;
+use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
+use maplit::hashmap;
 use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
 use reqwest::ClientBuilder;

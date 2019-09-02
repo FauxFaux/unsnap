@@ -1,3 +1,6 @@
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub server: Server,
