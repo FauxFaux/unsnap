@@ -32,7 +32,9 @@ mod files;
 mod titles;
 mod webs;
 
-use failure::Error;
+use futures::future::Future;
+use futures::future::{FutureExt, TryFutureExt};
+use failure::{Error, Fail};
 use failure::ResultExt;
 use irc::client::prelude::*;
 
@@ -61,17 +63,20 @@ fn main() -> Result<(), Error> {
     client.identify()?;
 
     async_bullshit.register_client_with_handler(client, move |client, message| {
-        if let Err(e) = handle(&webs, client, &message) {
-            warn!("processing error: {:?}: {:?}", message, e);
-        }
-        Ok(())
+        handle(&webs, client, &message).boxed()
+            .map(|r| {
+                if let Err(e) = r {
+                    warn!("processing error: {:?}: {:?}", message, e);
+                }
+                Ok(())
+            }).compat()
     });
 
     async_bullshit.run()?;
     Ok(())
 }
 
-fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<(), Error> {
+async fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<(), Error> {
     trace!("<- {:?}", message);
 
     match message.command {

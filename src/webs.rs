@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Read;
 use std::time;
+use std::sync::Mutex;
 
 use failure::Error;
 use failure::ResultExt;
@@ -27,7 +28,7 @@ pub trait Webs {
 pub struct Internet {
     config: Config,
     client: Client,
-    twitter_token: RefCell<Option<String>>,
+    twitter_token: Mutex<Option<String>>,
 }
 
 pub struct Resp {
@@ -80,7 +81,7 @@ impl Webs for Internet {
     }
 
     fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
-        if self.twitter_token.borrow().is_none() {
+        if self.twitter_token.lock()?.is_none() {
             self.update_twitter_token()?;
         }
         Ok(self

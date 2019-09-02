@@ -30,3 +30,7 @@ time-parse = "0.1"
 toml = "0.4"
 twoway = "0.2"
 url = "1"
+
+[dependencies.futures-preview]
+version = "=0.3.0-alpha.18"
+features = ["compat"]
