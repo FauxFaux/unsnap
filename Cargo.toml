@@ -19,7 +19,6 @@ number_prefix = "0.3"
 pretty_env_logger = "0.3"
 quick-xml = "0.14"
 regex = "1"
-reqwest = "0.9"
 result = "1"
 serde = "1"
 serde_derive = "1"
@@ -30,3 +29,7 @@ time-parse = "0.1"
 toml = "0.4"
 twoway = "0.2"
 url = "1"
+
+[dependencies.ureq]
+features = ["json"]
+version = "0.11"

@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io;
 use std::io::Read;
 use std::time;
 
@@ -9,13 +8,8 @@ use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use maplit::hashmap;
-use reqwest::header::AUTHORIZATION;
-use reqwest::Client;
-use reqwest::ClientBuilder;
-use reqwest::IntoUrl;
-use reqwest::Response;
-use reqwest::Url;
 use serde_json::Value;
+use ureq::Response;
 
 use crate::config::Config;
 
@@ -24,12 +18,12 @@ pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error>;
     fn twitter_get(&self, sub: &str) -> Result<Value, Error>;
     fn youtube_get(&self, url_suffix: &str, body: &HashMap<&str, &str>) -> Result<Value, Error>;
-    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error>;
+    fn raw_get<U: AsRef<str>>(&self, url: U) -> Result<Resp, Error>;
 }
 
 pub struct Internet {
     config: Config,
-    client: Client,
+    client: ureq::Agent,
     twitter_token: RefCell<Option<String>>,
 }
 
@@ -39,16 +33,11 @@ pub struct Resp {
 
 impl Internet {
     pub fn new(config: Config) -> Internet {
-        let mut headers = reqwest::header::HeaderMap::new();
         let ua = chrome_ua();
         info!("UA: {}", ua);
-        headers.insert("User-Agent", ua.parse().unwrap());
         Internet {
             config,
-            client: ClientBuilder::new()
-                .default_headers(headers)
-                .build()
-                .unwrap(),
+            client: ureq::agent().set("User-Agent", &ua).build(),
             twitter_token: RefCell::default(),
         }
     }
@@ -68,17 +57,30 @@ fn chrome_ua() -> String {
     )
 }
 
+fn errors(resp: ureq::Response) -> Result<Response, Error> {
+    if let Some(err) = resp.synthetic_error() {
+        // TODO: chainable?
+        bail!("http client error: {:?}", err);
+    }
+
+    if !resp.ok() {
+        bail!("bad response code: {}", resp.status())
+    }
+
+    Ok(resp)
+}
+
 impl Webs for Internet {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
         Ok(self
             .client
             .get(&format!("https://api.imgur.com/3/{}", sub))
-            .header(
-                AUTHORIZATION,
-                format!("Client-ID {}", &self.config.keys.imgur_client_id),
+            .set(
+                "Authorization",
+                &format!("Client-ID {}", &self.config.keys.imgur_client_id),
             )
-            .send()?
-            .json()
+            .call()
+            .into_json()
             .context("bad json from imgur")?)
     }
 
@@ -86,13 +88,17 @@ impl Webs for Internet {
         if self.twitter_token.borrow().is_none() {
             self.update_twitter_token()?;
         }
-        Ok(self
-            .client
-            .get(&format!("https://api.twitter.com/{}", sub))
-            .header(AUTHORIZATION, self.twitter_token.borrow().clone().unwrap())
-            .send()?
-            .json()
-            .context("bad json from twitter")?)
+        Ok(errors(
+            self.client
+                .get(&format!("https://api.twitter.com/{}", sub))
+                .set(
+                    "Authorization",
+                    &self.twitter_token.borrow().clone().unwrap(),
+                )
+                .call(),
+        )?
+        .into_json()
+        .context("bad json from twitter")?)
     }
 
     fn youtube_get<'s>(
@@ -103,41 +109,37 @@ impl Webs for Internet {
         let mut args = hashmap! {"key" => self.config.keys.youtube_developer_key.as_str() };
         args.extend(body);
 
-        let url = Url::parse_with_params(
+        let url = url::Url::parse_with_params(
             &format!("https://www.googleapis.com/youtube/{}", url_suffix),
             args,
         )
         .unwrap();
 
-        Ok(self
-            .client
-            .get(url)
-            .send()?
-            .json()
+        Ok(errors(self.client.get(url.as_str()).call())?
+            .into_json()
             .context("bad json from youtube")?)
     }
 
-    fn raw_get<U: IntoUrl>(&self, url: U) -> Result<Resp, Error> {
-        let inner = self.client.get(url).send()?;
+    fn raw_get<U: AsRef<str>>(&self, url: U) -> Result<Resp, Error> {
+        let inner = errors(self.client.get(url.as_ref()).call())?;
         Ok(Resp { inner })
     }
 }
 
 impl Internet {
     fn update_twitter_token(&self) -> Result<(), Error> {
-        let token_body: Value = self
-            .client
-            .post("https://api.twitter.com/oauth2/token")
-            .basic_auth(
-                self.config.keys.twitter_app_key.to_string(),
-                Some(self.config.keys.twitter_app_secret.to_string()),
-            )
-            .form(&hashmap! {
-                "grant_type" => "client_credentials",
-            })
-            .send()?
-            .json()
-            .context("bad json from twitter auth")?;
+        let token_body: Value = errors(
+            self.client
+                .post("https://api.twitter.com/oauth2/token")
+                .auth(
+                    &self.config.keys.twitter_app_key,
+                    &self.config.keys.twitter_app_secret,
+                )
+                .set("Content-Type", "application/x-www-form-urlencoded")
+                .send_string("grant_type=client_credentials"),
+        )?
+        .into_json()
+        .context("bad json from twitter auth")?;
 
         self.twitter_token.replace(Some(format!(
             "Bearer {}",
@@ -178,22 +180,15 @@ fn extract_token(token_body: &Value) -> Result<String, Error> {
 impl Resp {
     pub fn content_length(&self) -> Option<f64> {
         self.inner
-            .headers()
-            .get("Content-Length")
-            .and_then(|v| v.to_str().ok())
+            .header("Content-Length")
             .and_then(|v| v.parse().ok())
     }
 
     pub fn content_type(&self) -> Option<&str> {
-        self.inner
-            .headers()
-            .get("Content-Type")
-            .and_then(|v| v.to_str().ok())
+        self.inner.header("Content-Type")
     }
-}
 
-impl Read for Resp {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner.read(buf)
+    pub fn into_reader(self) -> impl Read {
+        self.inner.into_reader()
     }
 }

@@ -12,8 +12,13 @@ lazy_static::lazy_static! {
 }
 
 pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
-    let mut resp = webs.raw_get(url)?;
+    let resp = webs.raw_get(url)?;
     const PREVIEW_BYTES: usize = 64 * 4096;
+
+    let content_length = resp.content_length();
+    let content_type = resp.content_type().map(String::from);
+
+    let mut resp = resp.into_reader();
 
     let mut buf = [0u8; PREVIEW_BYTES];
     let found = resp.read_many(&mut buf)?;
@@ -30,13 +35,11 @@ pub fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
 
     let len = if buf.len() < PREVIEW_BYTES {
         Some(f64(buf.len()))
-    } else if let Some(len) = resp.content_length() {
+    } else if let Some(len) = content_length {
         Some(len)
     } else {
         None
     };
-
-    let content_type = resp.content_type();
 
     let ret = if missing {
         "No title found."

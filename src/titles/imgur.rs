@@ -136,7 +136,6 @@ mod tests {
     use std::collections::HashMap;
 
     use failure::Error;
-    use reqwest::IntoUrl;
     use serde_json;
     use serde_json::Value;
 
@@ -274,7 +273,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn raw_get<U: IntoUrl>(&self, _url: U) -> Result<Resp, Error> {
+        fn raw_get<U: AsRef<str>>(&self, _url: U) -> Result<Resp, Error> {
             unimplemented!()
         }
     }
