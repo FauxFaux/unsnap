@@ -23,7 +23,7 @@ pub trait Webs {
 
 pub struct Internet {
     config: Config,
-    client: ureq::Agent,
+    ua: String,
     twitter_token: RefCell<Option<String>>,
 }
 
@@ -37,7 +37,7 @@ impl Internet {
         info!("UA: {}", ua);
         Internet {
             config,
-            client: ureq::agent().set("User-Agent", &ua).build(),
+            ua,
             twitter_token: RefCell::default(),
         }
     }
@@ -72,9 +72,8 @@ fn errors(resp: ureq::Response) -> Result<Response, Error> {
 
 impl Webs for Internet {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
-        Ok(self
-            .client
-            .get(&format!("https://api.imgur.com/3/{}", sub))
+        Ok(ureq::get(&format!("https://api.imgur.com/3/{}", sub))
+            .set("User-Agent", &self.ua)
             .set(
                 "Authorization",
                 &format!("Client-ID {}", &self.config.keys.imgur_client_id),
@@ -89,8 +88,8 @@ impl Webs for Internet {
             self.update_twitter_token()?;
         }
         Ok(errors(
-            self.client
-                .get(&format!("https://api.twitter.com/{}", sub))
+            ureq::get(&format!("https://api.twitter.com/{}", sub))
+                .set("User-Agent", &self.ua)
                 .set(
                     "Authorization",
                     &self.twitter_token.borrow().clone().unwrap(),
@@ -115,13 +114,15 @@ impl Webs for Internet {
         )
         .unwrap();
 
-        Ok(errors(self.client.get(url.as_str()).call())?
-            .into_json()
-            .context("bad json from youtube")?)
+        Ok(
+            errors(ureq::get(url.as_str()).set("User-Agent", &self.ua).call())?
+                .into_json()
+                .context("bad json from youtube")?,
+        )
     }
 
     fn raw_get<U: AsRef<str>>(&self, url: U) -> Result<Resp, Error> {
-        let inner = errors(self.client.get(url.as_ref()).call())?;
+        let inner = errors(ureq::get(url.as_ref()).set("User-Agent", &self.ua).call())?;
         Ok(Resp { inner })
     }
 }
@@ -129,8 +130,8 @@ impl Webs for Internet {
 impl Internet {
     fn update_twitter_token(&self) -> Result<(), Error> {
         let token_body: Value = errors(
-            self.client
-                .post("https://api.twitter.com/oauth2/token")
+            ureq::post("https://api.twitter.com/oauth2/token")
+                .set("User-Agent", &self.ua)
                 .auth(
                     &self.config.keys.twitter_app_key,
                     &self.config.keys.twitter_app_secret,

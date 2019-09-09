@@ -32,4 +32,6 @@ url = "1"
 
 [dependencies.ureq]
 features = ["json"]
-version = "0.11"
+# 0.11 + close_notify: https://github.com/algesten/ureq/pull/9
+rev = "580e159268a2c474e58a6f5a6fbc2faedb4f058c"
+git = "https://github.com/FauxFaux/ureq"
