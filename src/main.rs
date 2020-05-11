@@ -11,48 +11,53 @@ mod webs;
 use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
-use irc::client::prelude::*;
+use futures::prelude::*;
+use irc::client::prelude as ic;
 
 use crate::webs::Webs;
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     pretty_env_logger::try_init()?;
 
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
 
-    let irc_config = irc::client::prelude::Config {
+    let irc_config = ic::Config {
         nickname: Some(config.server.nick.to_string()),
         server: Some(config.server.hostname.to_string()),
         username: config.server.user.clone(),
-        channels: Some(config.server.channels.clone()),
+        channels: config.server.channels.clone(),
         password: config.server.password.clone(),
         nick_password: config.server.nick_password.clone(),
+
+        // freenode takes over 10s to warm up, including hostname verification failure
+        ping_timeout: Some(20),
         ..Default::default()
     };
 
     let webs = webs::Internet::new(config);
 
-    let mut async_bullshit = irc::client::prelude::IrcReactor::new()?;
-    let client = async_bullshit.prepare_client_and_connect(&irc_config)?;
+    let mut client = ic::Client::from_config(irc_config).await?;
 
     client.identify()?;
 
-    async_bullshit.register_client_with_handler(client, move |client, message| {
-        if let Err(e) = handle(&webs, client, &message) {
+    let mut stream = client.stream()?;
+
+    while let Some(message) = stream.next().await.transpose()? {
+        println!("{:?}", message);
+        if let Err(e) = handle(&webs, &client, &message) {
             warn!("processing error: {:?}: {:?}", message, e);
         }
-        Ok(())
-    });
+    }
 
-    async_bullshit.run()?;
     Ok(())
 }
 
-fn handle<W: Webs>(webs: &W, client: &IrcClient, message: &Message) -> Result<(), Error> {
-    trace!("<- {:?}", message);
+fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Result<(), Error> {
+    info!("<- {:?}", message);
 
     match message.command {
-        Command::PRIVMSG(ref dest, ref msg) => {
+        ic::Command::PRIVMSG(ref dest, ref msg) => {
             if let Some(nick) = message.source_nickname() {
                 process_msg(webs, nick, &msg, |s| {
                     Ok(client
