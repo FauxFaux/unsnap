@@ -3,17 +3,20 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::time;
 
+use async_trait::async_trait;
 use failure::bail;
 use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use maplit::hashmap;
+use reqwest::Client;
+use reqwest::Response;
 use serde_json::Value;
-use ureq::Response;
 
 use crate::config::Config;
 
 // This is an interface, for generics-based dispatch. I made my decision, aware of the issues.
+#[async_trait]
 pub trait Webs {
     fn imgur_get(&self, sub: &str) -> Result<Value, Error>;
     fn twitter_get(&self, sub: &str) -> Result<Value, Error>;
@@ -22,6 +25,7 @@ pub trait Webs {
 }
 
 pub struct Internet {
+    client: Client,
     config: Config,
     ua: String,
     twitter_token: RefCell<Option<String>>,
@@ -36,6 +40,7 @@ impl Internet {
         let ua = chrome_ua();
         info!("UA: {}", ua);
         Internet {
+            client: Client::new(),
             config,
             ua,
             twitter_token: RefCell::default(),
@@ -57,50 +62,51 @@ fn chrome_ua() -> String {
     )
 }
 
-fn errors(resp: ureq::Response) -> Result<Response, Error> {
-    if let Some(err) = resp.synthetic_error() {
-        // TODO: chainable?
-        bail!("http client error: {:?}", err);
-    }
-
-    if !resp.ok() {
+fn errors(resp: Response) -> Result<Response, Error> {
+    if !resp.status().is_success() {
         bail!("bad response code: {}", resp.status())
     }
 
     Ok(resp)
 }
 
+#[async_trait]
 impl Webs for Internet {
-    fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
-        Ok(ureq::get(&format!("https://api.imgur.com/3/{}", sub))
-            .set("User-Agent", &self.ua)
-            .set(
+    async fn imgur_get(&self, sub: &str) -> Result<Value, Error> {
+        Ok(self
+            .client
+            .get(&format!("https://api.imgur.com/3/{}", sub))
+            .header("User-Agent", &self.ua)
+            .header(
                 "Authorization",
                 &format!("Client-ID {}", &self.config.keys.imgur_client_id),
             )
-            .call()
+            .send()
+            .await?
+            .and_then(|&mut b| b.json())
             .into_json()
             .context("bad json from imgur")?)
     }
 
-    fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
+    async fn twitter_get(&self, sub: &str) -> Result<Value, Error> {
         if self.twitter_token.borrow().is_none() {
             self.update_twitter_token()?;
         }
         Ok(errors(
-            ureq::get(&format!("https://api.twitter.com/{}", sub))
-                .set("User-Agent", &self.ua)
-                .set(
+            self.client
+                .get(&format!("https://api.twitter.com/{}", sub))
+                .header("User-Agent", &self.ua)
+                .header(
                     "Authorization",
                     &self.twitter_token.borrow().clone().unwrap(),
                 )
-                .call(),
+                .send(),
         )?
         .into_json()
         .context("bad json from twitter")?)
     }
 
-    fn youtube_get<'s>(
+    async fn youtube_get<'s>(
         &self,
         url_suffix: &str,
         body: &HashMap<&str, &str>,
@@ -114,33 +120,44 @@ impl Webs for Internet {
         )
         .unwrap();
 
-        Ok(
-            errors(ureq::get(url.as_str()).set("User-Agent", &self.ua).call())?
-                .into_json()
-                .context("bad json from youtube")?,
-        )
+        Ok(errors(
+            self.client
+                .get(url.as_str())
+                .set("User-Agent", &self.ua)
+                .call(),
+        )?
+        .into_json()
+        .context("bad json from youtube")?)
     }
 
-    fn raw_get<U: AsRef<str>>(&self, url: U) -> Result<Resp, Error> {
-        let inner = errors(ureq::get(url.as_ref()).set("User-Agent", &self.ua).call())?;
+    async fn raw_get<U: AsRef<str>>(&self, url: U) -> Result<Resp, Error> {
+        let inner = errors(
+            self.client
+                .get(url.as_ref())
+                .header("User-Agent", &self.ua)
+                .send(),
+        )?;
         Ok(Resp { inner })
     }
 }
 
 impl Internet {
-    fn update_twitter_token(&self) -> Result<(), Error> {
+    async fn update_twitter_token(&self) -> Result<(), Error> {
         let token_body: Value = errors(
-            ureq::post("https://api.twitter.com/oauth2/token")
-                .set("User-Agent", &self.ua)
-                .auth(
+            self.client
+                .post("https://api.twitter.com/oauth2/token")
+                .header("User-Agent", &self.ua)
+                .basic_auth(
                     &self.config.keys.twitter_app_key,
-                    &self.config.keys.twitter_app_secret,
+                    Some(&self.config.keys.twitter_app_secret),
                 )
-                .set("Content-Type", "application/x-www-form-urlencoded")
-                .send_string("grant_type=client_credentials"),
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .body("grant_type=client_credentials")
+                .send()
+                .await?
         )?
-        .into_json()
-        .context("bad json from twitter auth")?;
+        .json().await
+        .with_context(|_| "bad json from twitter auth")?;
 
         self.twitter_token.replace(Some(format!(
             "Bearer {}",
@@ -186,10 +203,18 @@ impl Resp {
     }
 
     pub fn content_type(&self) -> Option<&str> {
-        self.inner.header("Content-Type")
+        self.inner.headers().get("Content-Type")
     }
 
-    pub fn into_reader(self) -> impl Read {
-        self.inner.into_reader()
+    pub async fn read_many(&mut self, mut buf: &mut [u8]) -> Result<usize, Error> {
+        let mut total = 0;
+        while let Some(chunk) = self.inner.chunk().await? {
+            let to_put = chunk.len().min(buf.len());
+            buf[..to_put].copy_from_slice(&chunk[..to_put]);
+            buf = &mut buf[to_put..];
+            total += to_put;
+        }
+
+        Ok(total)
     }
 }

@@ -6,6 +6,7 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 edition = "2018"
 
 [dependencies]
+async-trait = "0.1"
 cast = "0.2"
 chrono = "0.4"
 failure = "0.1"
@@ -21,6 +22,7 @@ pretty_env_logger = "0.3"
 quick-xml = "0.18"
 regex = "1"
 result = "1"
+reqwest = { version = "0.10", features = ["json"] }
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
@@ -31,7 +33,3 @@ tokio = "0.2"
 toml = "0.5"
 twoway = "0.2"
 url = "2"
-
-[dependencies.ureq]
-features = ["json"]
-version = "0.11"

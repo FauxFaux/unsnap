@@ -29,25 +29,22 @@ lazy_static::lazy_static! {
     static ref REPEATED_SPACE: Regex = Regex::new(r"\s{2,}").unwrap();
 }
 
-pub fn titles_for<W: Webs>(webs: &W, line: &str) -> Vec<Result<String, Error>> {
-    URL.find_iter(line)
-        .filter_map(|url| {
-            title_for(webs, url.as_str())
-                .map(|maybe| {
-                    maybe.map(|title| {
-                        format!(
-                            "[ {} - {} ]",
-                            hostname(url.as_str()),
-                            strip_whitespace(&title)
-                        )
-                    })
-                })
-                .invert()
-        })
-        .collect()
+pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>, Error> {
+    let mut v = Vec::new();
+    for url in URL.find_iter(line) {
+        if let Some(title) = title_for(webs, url.as_str()).await? {
+            v.push(format!(
+                "[ {} - {} ]",
+                hostname(url.as_str()),
+                strip_whitespace(&title)
+            ));
+        }
+    }
+
+    Ok(v)
 }
 
-fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
+async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
     if let Some(m) = IMGUR_IMAGE.captures(url) {
         let id = &m[1];
         return Ok(Some(imgur::image(webs, id)?));
@@ -60,7 +57,7 @@ fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
 
     if let Some(m) = REDDIT_VIDEO.captures(url) {
         let id = &m[1];
-        return Ok(Some(reddit::video(webs, id)?));
+        return Ok(Some(reddit::video(webs, id).await?));
     }
 
     if let Some(m) = TWITTER_TWEET.captures(url) {
@@ -74,6 +71,7 @@ fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
     }
 
     Ok(html::process(webs, url)
+        .await
         .map(|s| strip_whitespace(&s))
         .map_err(|e| {
             info!("gave up processing url {:?}: {:?}", url, e);

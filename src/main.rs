@@ -45,7 +45,7 @@ async fn main() -> Result<(), Error> {
 
     while let Some(message) = stream.next().await.transpose()? {
         println!("{:?}", message);
-        if let Err(e) = handle(&webs, &client, &message) {
+        if let Err(e) = handle(&webs, &client, &message).await {
             warn!("processing error: {:?}: {:?}", message, e);
         }
     }
@@ -53,7 +53,7 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Result<(), Error> {
+async fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Result<(), Error> {
     info!("<- {:?}", message);
 
     match message.command {
@@ -64,6 +64,7 @@ fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Resu
                         .send_privmsg(dest, s)
                         .with_context(|_| format_err!("replying to {:?}", dest))?)
                 })
+                    .await
                 .with_context(|_| format_err!("processing < {:?}> {:?}", nick, msg))?
             }
         }
@@ -73,7 +74,7 @@ fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Resu
     Ok(())
 }
 
-fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<(), Error>
+async fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<(), Error>
 where
     F: FnMut(&str) -> Result<(), Error>,
 {
@@ -89,8 +90,7 @@ where
         return Ok(());
     }
 
-    for title in titles::titles_for(webs, msg) {
-        let title = title?;
+    for title in titles::titles_for(webs, msg).await? {
         assert!(!title.contains(|c: char| c.is_control()));
         write(&limit_length(&title))?;
     }
