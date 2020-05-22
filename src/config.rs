@@ -32,5 +32,7 @@ pub struct Keys {
     pub imgur_client_id: String,
     pub twitter_app_key: String,
     pub twitter_app_secret: String,
+    pub spotify_app_key: String,
+    pub spotify_app_secret: String,
     pub youtube_developer_key: String,
 }

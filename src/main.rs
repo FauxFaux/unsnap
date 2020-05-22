@@ -44,7 +44,6 @@ async fn main() -> Result<()> {
     let mut stream = client.stream()?;
 
     while let Some(message) = stream.next().await.transpose()? {
-        println!("{:?}", message);
         if let Err(e) = handle(&webs, &client, &message).await {
             warn!("processing error: {:?}: {:?}", message, e);
         }

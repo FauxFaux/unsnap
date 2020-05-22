@@ -127,6 +127,31 @@ pub async fn twitter_get(
     Ok(resp.json().await.context("bad json from twitter")?)
 }
 
+pub async fn spotify_get(
+    client: &Client,
+    config: &Config,
+    state: &State,
+    sub: &str,
+) -> Result<Value> {
+    if state.spotify_token.borrow().is_none() {
+        state.update_spotify_token(client, config).await?;
+    }
+    let url = format!("https://api.spotify.com/v1/{}", sub);
+    let resp = errors(
+        client
+            .get(&url)
+            .header(
+                "Authorization",
+                &state.spotify_token.borrow().clone().unwrap(),
+            )
+            .send()
+            .await
+            .with_context(|| format_err!("network fetching {:?}", url))?,
+    )
+    .with_context(|| format_err!("status fetching {:?}", url))?;
+    Ok(resp.json().await.context("bad json from spotify")?)
+}
+
 pub async fn youtube_get(
     client: &Client,
     config: &Config,
@@ -151,31 +176,55 @@ pub async fn youtube_get(
 #[derive(Default)]
 pub struct State {
     twitter_token: RefCell<Option<String>>,
+    spotify_token: RefCell<Option<String>>,
+}
+
+async fn oauth_token(client: &Client, url: &str, key: &str, secret: &str) -> Result<String> {
+    let token_body: Value = errors(
+        client
+            .post(url)
+            .basic_auth(key, Some(secret))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body("grant_type=client_credentials")
+            .send()
+            .await?,
+    )?
+    .json()
+    .await
+    .with_context(|| format_err!("bad json from auth: {:?}", url))?;
+
+    Ok(format!(
+        "Bearer {}",
+        extract_token(&token_body)
+            .with_context(|| format_err!("processing oauth response: {:?}", token_body))?
+    ))
 }
 
 impl State {
     async fn update_twitter_token(&self, client: &Client, config: &Config) -> Result<()> {
-        let token_body: Value = errors(
-            client
-                .post("https://api.twitter.com/oauth2/token")
-                .basic_auth(
-                    &config.keys.twitter_app_key,
-                    Some(&config.keys.twitter_app_secret),
-                )
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .body("grant_type=client_credentials")
-                .send()
-                .await?,
-        )?
-        .json()
-        .await
-        .with_context(|| "bad json from twitter auth")?;
+        self.twitter_token.replace(Some(
+            oauth_token(
+                client,
+                "https://api.twitter.com/oauth2/token",
+                &config.keys.twitter_app_key,
+                &config.keys.twitter_app_secret,
+            )
+            .await?,
+        ));
 
-        self.twitter_token.replace(Some(format!(
-            "Bearer {}",
-            extract_token(&token_body)
-                .with_context(|| format_err!("processing oauth response: {:?}", token_body))?
-        )));
+        Ok(())
+    }
+
+    async fn update_spotify_token(&self, client: &Client, config: &Config) -> Result<()> {
+        self.spotify_token.replace(Some(
+            oauth_token(
+                client,
+                "https://accounts.spotify.com/api/token",
+                &config.keys.spotify_app_key,
+                &config.keys.spotify_app_secret,
+            )
+            .await?,
+        ));
 
         Ok(())
     }
@@ -189,12 +238,12 @@ fn epoch_secs() -> u64 {
 }
 
 fn extract_token(token_body: &Value) -> Result<String> {
-    if token_body
+    if !token_body
         .get("token_type")
         .ok_or_else(|| format_err!("no token_type"))?
         .as_str()
         .ok_or_else(|| format_err!("non-string token_type"))?
-        != "bearer"
+        .eq_ignore_ascii_case("bearer")
     {
         bail!("invalid/missing token_type in oauth response");
     }

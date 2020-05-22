@@ -1,6 +1,7 @@
 mod html;
 mod imgur;
 mod reddit;
+mod spotify;
 mod twitter;
 mod youtube;
 
@@ -18,6 +19,8 @@ lazy_static::lazy_static! {
     static ref IMGUR_GALLERY: Regex =
         Regex::new(r"https?://(?:www\.)?imgur\.com/(?:a|gallery)/([a-zA-Z0-9]{5,7})").unwrap();
     static ref REDDIT_VIDEO: Regex = Regex::new(r"https?://v.redd.it/(\w+)").unwrap();
+    static ref SPOTIFY_WHATEVER: Regex =
+        Regex::new(r"https://open.spotify.com/(\w+)/([a-zA-Z0-9]{20,25})").unwrap();
     static ref TWITTER_TWEET: Regex =
         Regex::new(r"https?://(?:www\.)?twitter.com/(?:[^/]+)/status/(\d{16,25})").unwrap();
     static ref YOUTUBE_VIDEO: Regex = Regex::new(
@@ -57,6 +60,12 @@ async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>> {
     if let Some(m) = REDDIT_VIDEO.captures(url) {
         let id = &m[1];
         return Ok(Some(reddit::video(webs, id).await?));
+    }
+
+    if let Some(m) = SPOTIFY_WHATEVER.captures(url) {
+        let kind = &m[1];
+        let id = &m[2];
+        return Ok(Some(spotify::anything(webs, kind, id).await?));
     }
 
     if let Some(m) = TWITTER_TWEET.captures(url) {
