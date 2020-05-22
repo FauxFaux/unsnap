@@ -144,7 +144,6 @@ mod tests {
     use serde_json::Value;
 
     use crate::webs::Explode;
-    use crate::webs::Resp;
     use crate::webs::Webs;
 
     const STRAIGHT_IMAGE: &str = r#"

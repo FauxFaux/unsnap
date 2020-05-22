@@ -1,11 +1,12 @@
 use cast::f64;
 use failure::Error;
-use iowrap::ReadMany;
 use regex::bytes;
 
 use super::strip_whitespace;
 use crate::titles::show_size;
-use crate::webs::raw_get;
+use crate::webs::content_length;
+use crate::webs::content_type;
+use crate::webs::read_many;
 use crate::webs::Webs;
 
 lazy_static::lazy_static! {
@@ -13,14 +14,14 @@ lazy_static::lazy_static! {
 }
 
 pub async fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
-    let mut resp = raw_get(webs.client(), url).await?;
+    let mut resp = webs.client().get(url).send().await?;
     const PREVIEW_BYTES: usize = 64 * 4096;
 
-    let content_length = resp.content_length();
-    let content_type = resp.content_type().map(String::from);
+    let content_length = content_length(&resp);
+    let content_type = content_type(&resp).map(String::from);
 
     let mut buf = [0u8; PREVIEW_BYTES];
-    let found = resp.read_many(&mut buf).await?;
+    let found = read_many(&mut resp, &mut buf).await?;
     let buf = &buf[..found];
 
     let missing = match parse_html(buf) {

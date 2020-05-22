@@ -57,10 +57,6 @@ impl Webs for Explode {
     }
 }
 
-pub struct Resp {
-    inner: Response,
-}
-
 impl Internet {
     pub fn new(config: Config) -> Internet {
         let ua = chrome_ua();
@@ -150,11 +146,6 @@ pub async fn youtube_get(
         .context("bad json from youtube")?)
 }
 
-pub async fn raw_get<U: AsRef<str>>(client: &Client, url: U) -> Result<Resp, Error> {
-    let inner = errors(client.get(url.as_ref()).send().await?)?;
-    Ok(Resp { inner })
-}
-
 #[derive(Default)]
 pub struct State {
     twitter_token: RefCell<Option<String>>,
@@ -214,33 +205,17 @@ fn extract_token(token_body: &Value) -> Result<String, Error> {
         .to_string())
 }
 
-impl Resp {
-    pub fn content_length(&self) -> Option<f64> {
-        self.inner
-            .headers()
-            .get("Content-Length")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.parse().ok())
-    }
+pub fn content_length(resp: &Response) -> Option<f64> {
+    resp.headers()
+        .get("Content-Length")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse().ok())
+}
 
-    pub fn content_type(&self) -> Option<&str> {
-        self.inner
-            .headers()
-            .get("Content-Type")
-            .and_then(|v| v.to_str().ok())
-    }
-
-    pub async fn read_many(&mut self, mut buf: &mut [u8]) -> Result<usize, Error> {
-        let mut total = 0;
-        while let Some(chunk) = self.inner.chunk().await? {
-            let to_put = chunk.len().min(buf.len());
-            buf[..to_put].copy_from_slice(&chunk[..to_put]);
-            buf = &mut buf[to_put..];
-            total += to_put;
-        }
-
-        Ok(total)
-    }
+pub fn content_type(resp: &Response) -> Option<&str> {
+    resp.headers()
+        .get("Content-Type")
+        .and_then(|v| v.to_str().ok())
 }
 
 pub async fn read_many(inner: &mut Response, mut buf: &mut [u8]) -> Result<usize, Error> {

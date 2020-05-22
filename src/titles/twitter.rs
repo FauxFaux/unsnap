@@ -45,7 +45,6 @@ mod tests {
     use serde_json::Value;
 
     use crate::webs::Explode;
-    use crate::webs::Resp;
     use crate::webs::Webs;
 
     fn twitter_get_mock(client: &Client, sub: &str) -> Result<Value, Error> {

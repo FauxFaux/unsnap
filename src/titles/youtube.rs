@@ -78,7 +78,6 @@ mod tests {
     use serde_json::Value;
 
     use crate::webs::Explode;
-    use crate::webs::Resp;
     use crate::webs::Webs;
 
     fn youtube_get_mock(
