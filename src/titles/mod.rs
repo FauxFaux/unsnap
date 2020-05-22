@@ -6,7 +6,6 @@ mod youtube;
 
 use failure::Error;
 use regex::Regex;
-use result::ResultOptionExt;
 use url::Url;
 
 use crate::webs::Webs;

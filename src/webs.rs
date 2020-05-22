@@ -1,9 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::Read;
 use std::time;
 
-use async_trait::async_trait;
 use failure::bail;
 use failure::format_err;
 use failure::Error;
@@ -92,7 +90,7 @@ pub fn errors(resp: Response) -> Result<Response, Error> {
 }
 
 pub async fn imgur_get(client: &Client, config: &Config, sub: &str) -> Result<Value, Error> {
-    let mut resp = client
+    let resp = client
         .get(&format!("https://api.imgur.com/3/{}", sub))
         .header(
             "Authorization",

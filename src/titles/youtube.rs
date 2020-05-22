@@ -22,6 +22,10 @@ pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     )
     .await?;
 
+    render_video(resp)
+}
+
+fn render_video(resp: Value) -> Result<String, Error> {
     let data = resp
         .get("items")
         .ok_or(format_err!("missing items"))?
@@ -69,38 +73,14 @@ fn major_duration_unit(duration: &Duration) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
-    use failure::Error;
-    use maplit::hashmap;
-    use reqwest::Client;
     use serde_json;
-    use serde_json::Value;
 
-    use crate::webs::Explode;
-    use crate::webs::Webs;
-
-    fn youtube_get_mock(
-        client: &Client,
-        url_suffix: &str,
-        body: &HashMap<&str, &str>,
-    ) -> Result<Value, Error> {
-        assert_eq!("v3/videos", url_suffix);
-        let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
-        Ok(match body {
-            val if *val == aiweechoo => {
-                serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json")).unwrap()
-            }
-            body => unimplemented!("test bug: {:?}", body),
-        })
-    }
-
-    #[tokio::test]
-    async fn aiweechoo() {
+    #[test]
+    fn aiweechoo() {
         assert_eq!(
             "5m 2013-03-08 ፤ [shoopfex] ፤ Platinum Level Circulation (Avicii x Tsukihi Araragi x Nadeko Sengoku)",
-            super::video(&mut Explode {}, "JwhjqdSPw5g")
-                .await.unwrap()
+            super::render_video(serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json")).unwrap())
+                .unwrap()
                 .as_str()
         )
     }

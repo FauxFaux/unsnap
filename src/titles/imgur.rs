@@ -1,15 +1,17 @@
 use failure::format_err;
 use failure::Error;
-use reqwest::Client;
 use serde_json::Value;
 
 use crate::titles::show_size;
 use crate::webs::imgur_get;
-use crate::webs::Explode;
 use crate::webs::Webs;
 
 pub async fn image<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = imgur_get(webs.client(), webs.config(), &format!("image/{}", id)).await?;
+    render_image(resp)
+}
+
+fn render_image(resp: Value) -> Result<String, Error> {
     let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
     image_body(data, None)
@@ -63,6 +65,10 @@ fn push_sfw(title: &mut String, data: &Value) {
 
 pub async fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     let resp = imgur_get(webs.client(), webs.config(), &format!("album/{}", id)).await?;
+    render_gallery(resp)
+}
+
+fn render_gallery(resp: Value) -> Result<String, Error> {
     let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
     let gallery_title = data
@@ -136,15 +142,8 @@ fn try_f64(data: &Value, key: &str) -> Option<f64> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
-    use failure::Error;
-    use reqwest::Client;
     use serde_json;
     use serde_json::Value;
-
-    use crate::webs::Explode;
-    use crate::webs::Webs;
 
     const STRAIGHT_IMAGE: &str = r#"
         {"data":{"id":"TUgcjTQ","title":null,"description":null,"datetime":1517869892,
@@ -249,57 +248,48 @@ mod tests {
         "success":true,"status":200}
     "##;
 
-    fn imgur_get_mock(client: &Client, sub: &str) -> Result<Value, Error> {
-        Ok(match sub {
-            "album/rTV6u" => serde_json::from_str(SINGLE_IMAGE_ALBUM).unwrap(),
-            "album/nRuZwtp" => serde_json::from_str(SINGLE_IMAGE_ANIMATED).unwrap(),
-            "album/mk0v7" => serde_json::from_str(MULTI_IMAGE_ALBUM).unwrap(),
-            "image/TUgcjTQ" => serde_json::from_str(STRAIGHT_IMAGE).unwrap(),
-            "image/PmSOx4H" => serde_json::from_str(IMAGE_WITH_TITLE).unwrap(),
-            "image/SRup0KZ" => serde_json::from_str(VIDEO_WITH_DESCRIPTION).unwrap(),
-            "image/zEG4ULo" => serde_json::from_str(IMAGE_WITH_SECTION).unwrap(),
-            other => unimplemented!("test bug, missing url: {:?}", other),
-        })
+    fn json(val: &'static str) -> Value {
+        serde_json::from_str(val).unwrap()
     }
 
-    #[tokio::test]
-    async fn format_image() {
+    #[test]
+    fn format_image() {
         assert_eq!(
             "470×334 12.5KiB sfw",
-            super::image(&mut Explode {}, "TUgcjTQ").await.unwrap()
+            super::render_image(json(STRAIGHT_IMAGE)).unwrap()
         );
 
         assert_eq!(
             "640×799 97.2KiB /r/pics sfw",
-            super::image(&mut Explode {}, "zEG4ULo").await.unwrap()
+            super::render_image(json(IMAGE_WITH_SECTION)).unwrap()
         );
 
         assert_eq!(
             "720×540 32.5KiB /r/pics sfw ፤ My army is ready, we attack at nightfall",
-            super::image(&mut Explode {}, "PmSOx4H").await.unwrap()
+            super::render_image(json(IMAGE_WITH_TITLE)).unwrap()
         );
 
         assert_eq!(
             "667×500 8.2MiB /r/awesomenature sfw ፤ #dolphinsandshit",
-            super::image(&mut Explode {}, "SRup0KZ").await.unwrap()
+            super::render_image(json(VIDEO_WITH_DESCRIPTION)).unwrap()
         );
     }
 
-    #[tokio::test]
-    async fn format_album() {
+    #[test]
+    fn format_album() {
         assert_eq!(
             "https://i.imgur.com/tUulJaV.jpg ፤ 640×770 87.4KiB ?fw ፤ Branch manager and Assistant Branch manager",
-            super::gallery(&mut Explode {}, "rTV6u").await.unwrap()
+            super::render_gallery(json(SINGLE_IMAGE_ALBUM)).unwrap()
         );
 
         assert_eq!(
             "https://i.imgur.com/KbVOQOm.mp4 ፤ 580×580 1.2MiB ?fw ፤ Bango cat",
-            super::gallery(&mut Explode {}, "nRuZwtp").await.unwrap()
+            super::render_gallery(json(SINGLE_IMAGE_ANIMATED)).unwrap()
         );
 
         assert_eq!(
             "0/2 animated ፤ 867.2KiB ?fw ፤ Transformation Tuesday: went from 6xl to 3xl... still got ways to go. Thanks imgur",
-            super::gallery(&mut Explode {}, "mk0v7").await.unwrap()
+            super::render_gallery(json(MULTI_IMAGE_ALBUM)).unwrap()
         );
     }
 }
