@@ -41,8 +41,7 @@ fn render_video(resp: Value) -> Result<String> {
         data.get("contentDetails")
             .ok_or(anyhow!("no content details"))?
             .get("duration"),
-    )?)
-    .map_err(|e| anyhow!("{:?}", e))?;
+    )?)?;
 
     Ok(format!(
         "{} {} ፤ [{}] ፤ {}",
