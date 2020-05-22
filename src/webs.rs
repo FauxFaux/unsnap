@@ -59,8 +59,12 @@ impl Internet {
     pub fn new(config: Config) -> Internet {
         let ua = chrome_ua();
         info!("UA: {}", ua);
+        let client = reqwest::ClientBuilder::new()
+            .user_agent(ua)
+            .build()
+            .expect("infallible");
         Internet {
-            client: Client::new(),
+            client,
             config,
             state: State::default(),
         }
