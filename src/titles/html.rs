@@ -1,5 +1,5 @@
+use anyhow::Result;
 use cast::f64;
-use failure::Error;
 use regex::bytes;
 
 use super::strip_whitespace;
@@ -13,7 +13,7 @@ lazy_static::lazy_static! {
     static ref TITLE: bytes::Regex = bytes::Regex::new(r"(?i)<title[^>]*>([^<]*)<").unwrap();
 }
 
-pub async fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
+pub async fn process<W: Webs>(webs: &W, url: &str) -> Result<String> {
     let mut resp = webs.client().get(url).send().await?;
     const PREVIEW_BYTES: usize = 64 * 4096;
 

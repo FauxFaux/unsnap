@@ -8,16 +8,16 @@ mod files;
 mod titles;
 mod webs;
 
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::format_err;
+use anyhow::Context;
+use anyhow::Result;
 use futures::prelude::*;
 use irc::client::prelude as ic;
 
 use crate::webs::Webs;
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     pretty_env_logger::try_init()?;
 
     let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
@@ -53,11 +53,7 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn handle<W: Webs>(
-    webs: &W,
-    client: &ic::Client,
-    message: &ic::Message,
-) -> Result<(), Error> {
+async fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Result<()> {
     info!("<- {:?}", message);
 
     match message.command {
@@ -66,10 +62,10 @@ async fn handle<W: Webs>(
                 process_msg(webs, nick, &msg, |s| {
                     Ok(client
                         .send_privmsg(dest, s)
-                        .with_context(|_| format_err!("replying to {:?}", dest))?)
+                        .with_context(|| format_err!("replying to {:?}", dest))?)
                 })
                 .await
-                .with_context(|_| format_err!("processing < {:?}> {:?}", nick, msg))?
+                .with_context(|| format_err!("processing < {:?}> {:?}", nick, msg))?
             }
         }
         _ => (),
@@ -78,9 +74,9 @@ async fn handle<W: Webs>(
     Ok(())
 }
 
-async fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<(), Error>
+async fn process_msg<F, W: Webs>(webs: &W, nick: &str, msg: &str, mut write: F) -> Result<()>
 where
-    F: FnMut(&str) -> Result<(), Error>,
+    F: FnMut(&str) -> Result<()>,
 {
     if msg.starts_with("!qalc ") {
         let input = &msg["!qalc".len()..];

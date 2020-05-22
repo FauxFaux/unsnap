@@ -6,9 +6,9 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 edition = "2018"
 
 [dependencies]
+anyhow = "1"
 cast = "0.2"
 chrono = "0.4"
-failure = "0.1"
 futures = "0.3"
 htmlescape = "0.3"
 irc = "0.14"

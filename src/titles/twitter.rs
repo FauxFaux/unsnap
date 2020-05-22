@@ -1,11 +1,11 @@
-use failure::format_err;
-use failure::Error;
+use anyhow::format_err;
+use anyhow::Result;
 use serde_json::Value;
 
 use crate::webs::twitter_get;
 use crate::webs::Webs;
 
-pub async fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
+pub async fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let resp = twitter_get(
         webs.client(),
         webs.config(),
@@ -17,7 +17,7 @@ pub async fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     render_tweet(resp)
 }
 
-fn render_tweet(resp: Value) -> Result<String, Error> {
+fn render_tweet(resp: Value) -> Result<String> {
     let text = super::cleanup_newlines(
         resp.get("full_text")
             .ok_or_else(|| format_err!("missing text"))?

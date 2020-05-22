@@ -1,9 +1,9 @@
-use failure::Error;
+use anyhow::Result;
 
 use crate::webs::read_many;
 use crate::webs::Webs;
 
-pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
+pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let base = format!("https://v.redd.it/{}/", id);
     let html = crate::titles::html::process(webs, &base).await.ok();
 

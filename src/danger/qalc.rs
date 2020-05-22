@@ -2,15 +2,15 @@ use std::ffi::OsString;
 use std::io::Write;
 use std::time::Duration;
 
-use failure::bail;
-use failure::err_msg;
-use failure::Error;
+use anyhow::anyhow;
+use anyhow::bail;
+use anyhow::Result;
 use subprocess::Popen;
 use subprocess::PopenConfig;
 use subprocess::Redirection;
 use tempfile::NamedTempFile;
 
-pub fn qalc(input: &str) -> Result<String, Error> {
+pub fn qalc(input: &str) -> Result<String> {
     let mut temp = NamedTempFile::new()?;
 
     let input = input.replace(" ;; ", "\n");
@@ -34,7 +34,7 @@ pub fn qalc(input: &str) -> Result<String, Error> {
 
     if let Some(_exit) = child.wait_timeout(Duration::from_secs(1))? {
         let (output, _) = child.communicate(None)?;
-        Ok(output.ok_or_else(|| err_msg("output requested"))?)
+        Ok(output.ok_or_else(|| anyhow!("output requested"))?)
     } else {
         child.kill()?;
         bail!("timeout, kill attempted");

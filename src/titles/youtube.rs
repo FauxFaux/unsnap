@@ -1,8 +1,8 @@
 use std::time::Duration;
 
+use anyhow::anyhow;
+use anyhow::Result;
 use chrono::DateTime;
-use failure::format_err;
-use failure::Error;
 use maplit::hashmap;
 use serde_json::Value;
 use time_parse::duration;
@@ -10,7 +10,7 @@ use time_parse::duration;
 use crate::webs::youtube_get;
 use crate::webs::Webs;
 
-pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
+pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let resp = youtube_get(
         webs.client(),
         webs.config(),
@@ -25,23 +25,24 @@ pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
     render_video(resp)
 }
 
-fn render_video(resp: Value) -> Result<String, Error> {
+fn render_video(resp: Value) -> Result<String> {
     let data = resp
         .get("items")
-        .ok_or(format_err!("missing items"))?
+        .ok_or(anyhow!("missing items"))?
         .get(0)
-        .ok_or(format_err!("unexpectedly empty items"))?;
+        .ok_or(anyhow!("unexpectedly empty items"))?;
 
-    let snippet = data.get("snippet").ok_or(format_err!("snippet missing"))?;
+    let snippet = data.get("snippet").ok_or(anyhow!("snippet missing"))?;
 
     let title = string(snippet.get("title"))?;
     let channel_title = string(snippet.get("channelTitle"))?;
     let published = DateTime::parse_from_rfc3339(string(snippet.get("publishedAt"))?)?;
     let duration = duration::parse(string(
         data.get("contentDetails")
-            .ok_or(format_err!("no content details"))?
+            .ok_or(anyhow!("no content details"))?
             .get("duration"),
-    )?)?;
+    )?)
+    .map_err(|e| anyhow!("{:?}", e))?;
 
     Ok(format!(
         "{} {} ፤ [{}] ፤ {}",
@@ -52,10 +53,10 @@ fn render_video(resp: Value) -> Result<String, Error> {
     ))
 }
 
-fn string(value: Option<&Value>) -> Result<&str, Error> {
+fn string(value: Option<&Value>) -> Result<&str> {
     Ok(value
         .and_then(|v| v.as_str())
-        .ok_or(format_err!("expected a string"))?)
+        .ok_or(anyhow!("expected a string"))?)
 }
 
 fn major_duration_unit(duration: &Duration) -> String {

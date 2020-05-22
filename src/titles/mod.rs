@@ -4,7 +4,7 @@ mod reddit;
 mod twitter;
 mod youtube;
 
-use failure::Error;
+use anyhow::Result;
 use regex::Regex;
 use url::Url;
 
@@ -28,7 +28,7 @@ lazy_static::lazy_static! {
     static ref REPEATED_SPACE: Regex = Regex::new(r"\s{2,}").unwrap();
 }
 
-pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>, Error> {
+pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>> {
     let mut v = Vec::new();
     for url in URL.find_iter(line) {
         if let Some(title) = title_for(webs, url.as_str()).await? {
@@ -43,7 +43,7 @@ pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>, Er
     Ok(v)
 }
 
-async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
+async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>> {
     if let Some(m) = IMGUR_IMAGE.captures(url) {
         let id = &m[1];
         return Ok(Some(imgur::image(webs, id).await?));

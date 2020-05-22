@@ -2,10 +2,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time;
 
-use failure::bail;
-use failure::format_err;
-use failure::Error;
-use failure::ResultExt;
+use anyhow::bail;
+use anyhow::format_err;
+use anyhow::Context;
+use anyhow::Result;
 use maplit::hashmap;
 use reqwest::Client;
 use reqwest::Response;
@@ -81,7 +81,7 @@ fn chrome_ua() -> String {
     )
 }
 
-pub fn errors(resp: Response) -> Result<Response, Error> {
+pub fn errors(resp: Response) -> Result<Response> {
     if !resp.status().is_success() {
         bail!("bad response code: {}", resp.status())
     }
@@ -89,7 +89,7 @@ pub fn errors(resp: Response) -> Result<Response, Error> {
     Ok(resp)
 }
 
-pub async fn imgur_get(client: &Client, config: &Config, sub: &str) -> Result<Value, Error> {
+pub async fn imgur_get(client: &Client, config: &Config, sub: &str) -> Result<Value> {
     let resp = client
         .get(&format!("https://api.imgur.com/3/{}", sub))
         .header(
@@ -106,7 +106,7 @@ pub async fn twitter_get(
     config: &Config,
     state: &State,
     sub: &str,
-) -> Result<Value, Error> {
+) -> Result<Value> {
     if state.twitter_token.borrow().is_none() {
         state.update_twitter_token(client, config).await?;
     }
@@ -128,7 +128,7 @@ pub async fn youtube_get(
     config: &Config,
     url_suffix: &str,
     body: &HashMap<&str, &str>,
-) -> Result<Value, Error> {
+) -> Result<Value> {
     let mut args = hashmap! {"key" => config.keys.youtube_developer_key.as_str() };
     args.extend(body);
 
@@ -150,7 +150,7 @@ pub struct State {
 }
 
 impl State {
-    async fn update_twitter_token(&self, client: &Client, config: &Config) -> Result<(), Error> {
+    async fn update_twitter_token(&self, client: &Client, config: &Config) -> Result<()> {
         let token_body: Value = errors(
             client
                 .post("https://api.twitter.com/oauth2/token")
@@ -165,12 +165,12 @@ impl State {
         )?
         .json()
         .await
-        .with_context(|_| "bad json from twitter auth")?;
+        .with_context(|| "bad json from twitter auth")?;
 
         self.twitter_token.replace(Some(format!(
             "Bearer {}",
             extract_token(&token_body)
-                .with_context(|_| format_err!("processing oauth response: {:?}", token_body))?
+                .with_context(|| format_err!("processing oauth response: {:?}", token_body))?
         )));
 
         Ok(())
@@ -184,7 +184,7 @@ fn epoch_secs() -> u64 {
         .as_secs()
 }
 
-fn extract_token(token_body: &Value) -> Result<String, Error> {
+fn extract_token(token_body: &Value) -> Result<String> {
     if token_body
         .get("token_type")
         .ok_or_else(|| format_err!("no token_type"))?
@@ -216,7 +216,7 @@ pub fn content_type(resp: &Response) -> Option<&str> {
         .and_then(|v| v.to_str().ok())
 }
 
-pub async fn read_many(inner: &mut Response, mut buf: &mut [u8]) -> Result<usize, Error> {
+pub async fn read_many(inner: &mut Response, mut buf: &mut [u8]) -> Result<usize> {
     let mut total = 0;
     while let Some(chunk) = inner.chunk().await? {
         let to_put = chunk.len().min(buf.len());

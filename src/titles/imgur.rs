@@ -1,23 +1,23 @@
-use failure::format_err;
-use failure::Error;
+use anyhow::format_err;
+use anyhow::Result;
 use serde_json::Value;
 
 use crate::titles::show_size;
 use crate::webs::imgur_get;
 use crate::webs::Webs;
 
-pub async fn image<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
+pub async fn image<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let resp = imgur_get(webs.client(), webs.config(), &format!("image/{}", id)).await?;
     render_image(resp)
 }
 
-fn render_image(resp: Value) -> Result<String, Error> {
+fn render_image(resp: Value) -> Result<String> {
     let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
     image_body(data, None)
 }
 
-fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String, Error> {
+fn image_body(data: &Value, title_hint: Option<&str>) -> Result<String> {
     let mut title = format!(
         "{}×{}",
         data.get("width").ok_or(format_err!("missing width"))?,
@@ -63,12 +63,12 @@ fn push_sfw(title: &mut String, data: &Value) {
     });
 }
 
-pub async fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
+pub async fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String> {
     let resp = imgur_get(webs.client(), webs.config(), &format!("album/{}", id)).await?;
     render_gallery(resp)
 }
 
-fn render_gallery(resp: Value) -> Result<String, Error> {
+fn render_gallery(resp: Value) -> Result<String> {
     let data = resp.get("data").ok_or(format_err!("missing data"))?;
 
     let gallery_title = data
@@ -118,7 +118,7 @@ fn render_gallery(resp: Value) -> Result<String, Error> {
     Ok(title)
 }
 
-fn preferred_link(image: &Value) -> Result<&str, Error> {
+fn preferred_link(image: &Value) -> Result<&str> {
     Ok(image
         .get("mp4")
         .or_else(|| image.get("link"))
