@@ -7,16 +7,20 @@ use maplit::hashmap;
 use serde_json::Value;
 use time_parse::duration;
 
+use crate::webs::youtube_get;
 use crate::webs::Webs;
 
-pub fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
-    let resp = webs.youtube_get(
+pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String, Error> {
+    let resp = youtube_get(
+        webs.client(),
+        webs.config(),
         "v3/videos",
         &hashmap!(
             "id" => id,
             "part" => "snippet,contentDetails"
         ),
-    )?;
+    )
+    .await?;
 
     let data = resp
         .get("items")
@@ -69,50 +73,35 @@ mod tests {
 
     use failure::Error;
     use maplit::hashmap;
+    use reqwest::Client;
     use serde_json;
     use serde_json::Value;
 
+    use crate::webs::Explode;
     use crate::webs::Resp;
     use crate::webs::Webs;
 
-    struct YoutubeTest;
-
-    impl Webs for YoutubeTest {
-        fn imgur_get(&self, _sub: &str) -> Result<Value, Error> {
-            unimplemented!()
-        }
-
-        fn twitter_get(&self, _sub: &str) -> Result<Value, Error> {
-            unimplemented!()
-        }
-
-        fn youtube_get(
-            &self,
-            url_suffix: &str,
-            body: &HashMap<&str, &str>,
-        ) -> Result<Value, Error> {
-            assert_eq!("v3/videos", url_suffix);
-            let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
-            Ok(match body {
-                val if *val == aiweechoo => {
-                    serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json"))
-                        .unwrap()
-                }
-                body => unimplemented!("test bug: {:?}", body),
-            })
-        }
-
-        fn raw_get<U: AsRef<str>>(&self, _url: U) -> Result<Resp, Error> {
-            unimplemented!()
-        }
+    fn youtube_get_mock(
+        client: &Client,
+        url_suffix: &str,
+        body: &HashMap<&str, &str>,
+    ) -> Result<Value, Error> {
+        assert_eq!("v3/videos", url_suffix);
+        let aiweechoo = hashmap! { "id" => "JwhjqdSPw5g", "part" => "snippet,contentDetails" };
+        Ok(match body {
+            val if *val == aiweechoo => {
+                serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json")).unwrap()
+            }
+            body => unimplemented!("test bug: {:?}", body),
+        })
     }
 
-    #[test]
-    fn aiweechoo() {
+    #[tokio::test]
+    async fn aiweechoo() {
         assert_eq!(
             "5m 2013-03-08 ፤ [shoopfex] ፤ Platinum Level Circulation (Avicii x Tsukihi Araragi x Nadeko Sengoku)",
-            super::video(&mut YoutubeTest {}, "JwhjqdSPw5g")
-                .unwrap()
+            super::video(&mut Explode {}, "JwhjqdSPw5g")
+                .await.unwrap()
                 .as_str()
         )
     }

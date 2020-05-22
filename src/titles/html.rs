@@ -5,6 +5,7 @@ use regex::bytes;
 
 use super::strip_whitespace;
 use crate::titles::show_size;
+use crate::webs::raw_get;
 use crate::webs::Webs;
 
 lazy_static::lazy_static! {
@@ -12,7 +13,7 @@ lazy_static::lazy_static! {
 }
 
 pub async fn process<W: Webs>(webs: &W, url: &str) -> Result<String, Error> {
-    let mut resp = webs.raw_get(url)?;
+    let mut resp = raw_get(webs.client(), url).await?;
     const PREVIEW_BYTES: usize = 64 * 4096;
 
     let content_length = resp.content_length();

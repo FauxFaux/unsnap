@@ -53,7 +53,11 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -> Result<(), Error> {
+async fn handle<W: Webs>(
+    webs: &W,
+    client: &ic::Client,
+    message: &ic::Message,
+) -> Result<(), Error> {
     info!("<- {:?}", message);
 
     match message.command {
@@ -64,7 +68,7 @@ async fn handle<W: Webs>(webs: &W, client: &ic::Client, message: &ic::Message) -
                         .send_privmsg(dest, s)
                         .with_context(|_| format_err!("replying to {:?}", dest))?)
                 })
-                    .await
+                .await
                 .with_context(|_| format_err!("processing < {:?}> {:?}", nick, msg))?
             }
         }

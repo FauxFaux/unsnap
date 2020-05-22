@@ -47,12 +47,12 @@ pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>, Er
 async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error> {
     if let Some(m) = IMGUR_IMAGE.captures(url) {
         let id = &m[1];
-        return Ok(Some(imgur::image(webs, id)?));
+        return Ok(Some(imgur::image(webs, id).await?));
     }
 
     if let Some(m) = IMGUR_GALLERY.captures(url) {
         let id = &m[1];
-        return Ok(Some(imgur::gallery(webs, id)?));
+        return Ok(Some(imgur::gallery(webs, id).await?));
     }
 
     if let Some(m) = REDDIT_VIDEO.captures(url) {
@@ -62,12 +62,12 @@ async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>, Error
 
     if let Some(m) = TWITTER_TWEET.captures(url) {
         let id = &m[1];
-        return Ok(Some(twitter::tweet(webs, id)?));
+        return Ok(Some(twitter::tweet(webs, id).await?));
     }
 
     if let Some(m) = YOUTUBE_VIDEO.captures(url) {
         let id = &m[1];
-        return Ok(Some(youtube::video(webs, id)?));
+        return Ok(Some(youtube::video(webs, id).await?));
     }
 
     Ok(html::process(webs, url)
