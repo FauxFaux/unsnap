@@ -1,0 +1,77 @@
+{
+  "album": {
+    "album_type": "album",
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/7gG6LkU3pCSQmCIPR4aSBt"
+        },
+        "href": "https://api.spotify.com/v1/artists/7gG6LkU3pCSQmCIPR4aSBt",
+        "id": "7gG6LkU3pCSQmCIPR4aSBt",
+        "name": "The Juan Maclean",
+        "type": "artist",
+        "uri": "spotify:artist:7gG6LkU3pCSQmCIPR4aSBt"
+      }
+    ],
+    "available_markets": [],
+    "external_urls": {
+      "spotify": "https://open.spotify.com/album/4LDnqBgnKpIW3Eaz9Y86NV"
+    },
+    "href": "https://api.spotify.com/v1/albums/4LDnqBgnKpIW3Eaz9Y86NV",
+    "id": "4LDnqBgnKpIW3Eaz9Y86NV",
+    "images": [
+      {
+        "height": 640,
+        "url": "https://i.scdn.co/image/ab67616d0000b273429c95a68fc7eefe76e4d1fe",
+        "width": 640
+      },
+      {
+        "height": 300,
+        "url": "https://i.scdn.co/image/ab67616d00001e02429c95a68fc7eefe76e4d1fe",
+        "width": 300
+      },
+      {
+        "height": 64,
+        "url": "https://i.scdn.co/image/ab67616d00004851429c95a68fc7eefe76e4d1fe",
+        "width": 64
+      }
+    ],
+    "name": "The Future Will Come",
+    "release_date": "2009-04-20",
+    "release_date_precision": "day",
+    "total_tracks": 10,
+    "type": "album",
+    "uri": "spotify:album:4LDnqBgnKpIW3Eaz9Y86NV"
+  },
+  "artists": [
+    {
+      "external_urls": {
+        "spotify": "https://open.spotify.com/artist/7gG6LkU3pCSQmCIPR4aSBt"
+      },
+      "href": "https://api.spotify.com/v1/artists/7gG6LkU3pCSQmCIPR4aSBt",
+      "id": "7gG6LkU3pCSQmCIPR4aSBt",
+      "name": "The Juan Maclean",
+      "type": "artist",
+      "uri": "spotify:artist:7gG6LkU3pCSQmCIPR4aSBt"
+    }
+  ],
+  "available_markets": [],
+  "disc_number": 1,
+  "duration_ms": 747226,
+  "explicit": false,
+  "external_ids": {
+    "isrc": "GBUM70903627"
+  },
+  "external_urls": {
+    "spotify": "https://open.spotify.com/track/0RoMhSh4g9gfHyDHid9yZs"
+  },
+  "href": "https://api.spotify.com/v1/tracks/0RoMhSh4g9gfHyDHid9yZs",
+  "id": "0RoMhSh4g9gfHyDHid9yZs",
+  "is_local": false,
+  "name": "Happy House",
+  "popularity": 0,
+  "preview_url": null,
+  "track_number": 10,
+  "type": "track",
+  "uri": "spotify:track:0RoMhSh4g9gfHyDHid9yZs"
+}

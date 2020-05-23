@@ -32,14 +32,20 @@ pub async fn anything<W: Webs>(webs: &W, kind: &str, id: &str) -> Result<String>
 }
 
 fn render_track(track: &SpotifyTrack) -> String {
-    format!(
-        "{} {} {} - {} - {}",
+    let mut msg = format!(
+        "{} {} {} - {}",
         major_duration_unit(&Duration::from_millis(track.duration_ms)),
         track.album.release_date,
         artist_names(&track.artists),
-        track.name,
-        strip_url(&track.preview_url),
-    )
+        track.name
+    );
+
+    if let Some(preview_url) = &track.preview_url {
+        msg.push_str(" - ");
+        msg.push_str(&strip_url(preview_url));
+    }
+
+    msg
 }
 
 fn artist_names(artists: &[SpotifyArtist]) -> String {
@@ -58,7 +64,7 @@ struct SpotifyTrack {
     artists: Vec<SpotifyArtist>,
     duration_ms: u64,
     name: String,
-    preview_url: String,
+    preview_url: Option<String>,
 
     popularity: f64,
 
@@ -95,6 +101,16 @@ mod test {
                 " - Lay Your Head On Me (feat. Marcus Mumford) - Lost Frequencies Remix",
                 " - https://p.scdn.co/mp3-preview/92b4abe7d7e721dffdcf7744ee4d062ede55a648?"
             ),
+            render_track(&track)
+        );
+    }
+
+    #[test]
+    fn no_preview() {
+        let track: SpotifyTrack =
+            serde_json::from_str(include_str!("../../tests/spotify-null.json")).unwrap();
+        assert_eq!(
+            "12m 2009-04-20 The Juan Maclean - Happy House",
             render_track(&track)
         );
     }
