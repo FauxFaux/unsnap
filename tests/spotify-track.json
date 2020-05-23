@@ -1,0 +1,111 @@
+{
+  "album": {
+    "album_type": "single",
+    "artists": [
+      {
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/738wLrAtLtCtFOLvQBXOXp"
+        },
+        "href": "https://api.spotify.com/v1/artists/738wLrAtLtCtFOLvQBXOXp",
+        "id": "738wLrAtLtCtFOLvQBXOXp",
+        "name": "Major Lazer",
+        "type": "artist",
+        "uri": "spotify:artist:738wLrAtLtCtFOLvQBXOXp"
+      }
+    ],
+    "available_markets": [
+      "US"
+    ],
+    "external_urls": {
+      "spotify": "https://open.spotify.com/album/0nsb6wUuGgUfU3IPbmdOQ6"
+    },
+    "href": "https://api.spotify.com/v1/albums/0nsb6wUuGgUfU3IPbmdOQ6",
+    "id": "0nsb6wUuGgUfU3IPbmdOQ6",
+    "images": [
+      {
+        "height": 640,
+        "url": "https://i.scdn.co/image/ab67616d0000b273ed818cdd0992275871f1e780",
+        "width": 640
+      },
+      {
+        "height": 300,
+        "url": "https://i.scdn.co/image/ab67616d00001e02ed818cdd0992275871f1e780",
+        "width": 300
+      },
+      {
+        "height": 64,
+        "url": "https://i.scdn.co/image/ab67616d00004851ed818cdd0992275871f1e780",
+        "width": 64
+      }
+    ],
+    "name": "Lay Your Head On Me (feat. Marcus Mumford) [Lost Frequencies Remix]",
+    "release_date": "2020-05-22",
+    "release_date_precision": "day",
+    "total_tracks": 1,
+    "type": "album",
+    "uri": "spotify:album:0nsb6wUuGgUfU3IPbmdOQ6"
+  },
+  "artists": [
+    {
+      "external_urls": {
+        "spotify": "https://open.spotify.com/artist/738wLrAtLtCtFOLvQBXOXp"
+      },
+      "href": "https://api.spotify.com/v1/artists/738wLrAtLtCtFOLvQBXOXp",
+      "id": "738wLrAtLtCtFOLvQBXOXp",
+      "name": "Major Lazer",
+      "type": "artist",
+      "uri": "spotify:artist:738wLrAtLtCtFOLvQBXOXp"
+    },
+    {
+      "external_urls": {
+        "spotify": "https://open.spotify.com/artist/5fMUXHkw8R8eOP2RNVYEZX"
+      },
+      "href": "https://api.spotify.com/v1/artists/5fMUXHkw8R8eOP2RNVYEZX",
+      "id": "5fMUXHkw8R8eOP2RNVYEZX",
+      "name": "Diplo",
+      "type": "artist",
+      "uri": "spotify:artist:5fMUXHkw8R8eOP2RNVYEZX"
+    },
+    {
+      "external_urls": {
+        "spotify": "https://open.spotify.com/artist/3bYcjbVAN3rAuU3TMzw2mB"
+      },
+      "href": "https://api.spotify.com/v1/artists/3bYcjbVAN3rAuU3TMzw2mB",
+      "id": "3bYcjbVAN3rAuU3TMzw2mB",
+      "name": "Marcus Mumford",
+      "type": "artist",
+      "uri": "spotify:artist:3bYcjbVAN3rAuU3TMzw2mB"
+    },
+    {
+      "external_urls": {
+        "spotify": "https://open.spotify.com/artist/7f5Zgnp2spUuuzKplmRkt7"
+      },
+      "href": "https://api.spotify.com/v1/artists/7f5Zgnp2spUuuzKplmRkt7",
+      "id": "7f5Zgnp2spUuuzKplmRkt7",
+      "name": "Lost Frequencies",
+      "type": "artist",
+      "uri": "spotify:artist:7f5Zgnp2spUuuzKplmRkt7"
+    }
+  ],
+  "available_markets": [
+    "US"
+  ],
+  "disc_number": 1,
+  "duration_ms": 228863,
+  "explicit": false,
+  "external_ids": {
+    "isrc": "QMUY42000047"
+  },
+  "external_urls": {
+    "spotify": "https://open.spotify.com/track/6GI5xXHzWpXMs1G3PM35rB"
+  },
+  "href": "https://api.spotify.com/v1/tracks/6GI5xXHzWpXMs1G3PM35rB",
+  "id": "6GI5xXHzWpXMs1G3PM35rB",
+  "is_local": false,
+  "name": "Lay Your Head On Me (feat. Marcus Mumford) - Lost Frequencies Remix",
+  "popularity": 0,
+  "preview_url": "https://p.scdn.co/mp3-preview/92b4abe7d7e721dffdcf7744ee4d062ede55a648?cid=6969698569e691a69f40686e091251c6",
+  "track_number": 1,
+  "type": "track",
+  "uri": "spotify:track:6GI5xXHzWpXMs1G3PM35rB"
+}

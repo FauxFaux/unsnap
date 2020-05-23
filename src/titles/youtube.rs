@@ -58,7 +58,7 @@ fn string(value: Option<&Value>) -> Result<&str> {
         .ok_or(anyhow!("expected a string"))?)
 }
 
-fn major_duration_unit(duration: &Duration) -> String {
+pub fn major_duration_unit(duration: &Duration) -> String {
     let mut d = duration.as_secs();
     for (div, name) in &[(60, 's'), (60, 'm')] {
         if d < *div {
