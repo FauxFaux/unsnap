@@ -1,15 +1,14 @@
 use anyhow::Result;
+use reqwest::Client;
 
 use crate::webs::read_many;
-use crate::webs::Webs;
 
-pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
+pub async fn video(http: Client, id: &str) -> Result<String> {
     let base = format!("https://v.redd.it/{}/", id);
-    let html = crate::titles::html::process(webs, &base).await.ok();
+    let html = crate::titles::html::process(http.clone(), &base).await.ok();
 
-    let mut buf = [0u8; 32 * 1024];
-    let mut resp = webs
-        .client()
+    let mut buf = vec![0u8; 32 * 1024];
+    let mut resp = http
         .get(&format!("{}DASHPlaylist.mpd", base))
         .send()
         .await?;

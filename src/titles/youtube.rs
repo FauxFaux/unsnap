@@ -1,19 +1,21 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use anyhow::Result;
 use chrono::DateTime;
 use maplit::hashmap;
+use reqwest::Client;
 use serde_json::Value;
 use time_parse::duration;
 
 use crate::webs::youtube_get;
-use crate::webs::Webs;
+use crate::webs::Context;
 
-pub async fn video<W: Webs>(webs: &W, id: &str) -> Result<String> {
+pub async fn video(http: Client, context: Arc<Context>, id: &str) -> Result<String> {
     let resp = youtube_get(
-        webs.client(),
-        webs.config(),
+        &http,
+        &context.config,
         "v3/videos",
         &hashmap!(
             "id" => id,

@@ -1,25 +1,25 @@
 use anyhow::Result;
 use regex::bytes;
+use reqwest::Client;
 
 use super::strip_whitespace;
 use crate::titles::show_size;
 use crate::webs::content_length;
 use crate::webs::content_type;
 use crate::webs::read_many;
-use crate::webs::Webs;
 
 lazy_static::lazy_static! {
     static ref TITLE: bytes::Regex = bytes::Regex::new(r"(?i)<title[^>]*>([^<]*)<").unwrap();
 }
 
-pub async fn process<W: Webs>(webs: &W, url: &str) -> Result<String> {
-    let mut resp = webs.client().get(url).send().await?;
+pub async fn process(http: Client, url: &str) -> Result<String> {
+    let mut resp = http.get(url).send().await?;
     const PREVIEW_BYTES: usize = 64 * 4096;
 
     let content_length = content_length(&resp);
     let content_type = content_type(&resp).map(String::from);
 
-    let mut buf = [0u8; PREVIEW_BYTES];
+    let mut buf = vec![0u8; PREVIEW_BYTES];
     let found = read_many(&mut resp, &mut buf).await?;
     let buf = &buf[..found];
 

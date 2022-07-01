@@ -7,9 +7,11 @@ mod youtube;
 
 use anyhow::Result;
 use regex::Regex;
+use reqwest::Client;
+use std::sync::Arc;
 use url::Url;
 
-use crate::webs::Webs;
+use crate::webs::Context;
 
 lazy_static::lazy_static! {
     static ref URL: Regex = Regex::new("https?://[^ ]+").unwrap();
@@ -31,10 +33,12 @@ lazy_static::lazy_static! {
     static ref REPEATED_SPACE: Regex = Regex::new(r"\s{2,}").unwrap();
 }
 
-pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>> {
+pub async fn titles_for(http: Client, context: Arc<Context>, line: &str) -> Result<Vec<String>> {
     let mut v = Vec::new();
     for url in URL.find_iter(line) {
-        if let Some(title) = title_for(webs, url.as_str()).await? {
+        let http = http.clone();
+        let context = Arc::clone(&context);
+        if let Some(title) = title_for(http, context, url.as_str()).await? {
             v.push(format!(
                 "[ {} - {} ]",
                 hostname(url.as_str()),
@@ -46,39 +50,39 @@ pub async fn titles_for<W: Webs>(webs: &W, line: &str) -> Result<Vec<String>> {
     Ok(v)
 }
 
-async fn title_for<W: Webs>(webs: &W, url: &str) -> Result<Option<String>> {
+async fn title_for(http: Client, context: Arc<Context>, url: &str) -> Result<Option<String>> {
     if let Some(m) = IMGUR_IMAGE.captures(url) {
         let id = &m[1];
-        return Ok(Some(imgur::image(webs, id).await?));
+        return Ok(Some(imgur::image(http, context, id).await?));
     }
 
     if let Some(m) = IMGUR_GALLERY.captures(url) {
         let id = &m[1];
-        return Ok(Some(imgur::gallery(webs, id).await?));
+        return Ok(Some(imgur::gallery(http, context, id).await?));
     }
 
     if let Some(m) = REDDIT_VIDEO.captures(url) {
         let id = &m[1];
-        return Ok(Some(reddit::video(webs, id).await?));
+        return Ok(Some(reddit::video(http, id).await?));
     }
 
     if let Some(m) = SPOTIFY_WHATEVER.captures(url) {
         let kind = &m[1];
         let id = &m[2];
-        return Ok(Some(spotify::anything(webs, kind, id).await?));
+        return Ok(Some(spotify::anything(http, context, kind, id).await?));
     }
 
     if let Some(m) = TWITTER_TWEET.captures(url) {
         let id = &m[1];
-        return Ok(Some(twitter::tweet(webs, id).await?));
+        return Ok(Some(twitter::tweet(http, context, id).await?));
     }
 
     if let Some(m) = YOUTUBE_VIDEO.captures(url) {
         let id = &m[1];
-        return Ok(Some(youtube::video(webs, id).await?));
+        return Ok(Some(youtube::video(http, context, id).await?));
     }
 
-    Ok(html::process(webs, url)
+    Ok(html::process(http, url)
         .await
         .map(|s| strip_whitespace(&s))
         .map_err(|e| {

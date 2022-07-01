@@ -1,13 +1,15 @@
 use anyhow::format_err;
 use anyhow::Result;
+use reqwest::Client;
 use serde_json::Value;
+use std::sync::Arc;
 
 use crate::titles::show_size;
 use crate::webs::imgur_get;
-use crate::webs::Webs;
+use crate::webs::Context;
 
-pub async fn image<W: Webs>(webs: &W, id: &str) -> Result<String> {
-    let resp = imgur_get(webs.client(), webs.config(), &format!("image/{}", id)).await?;
+pub async fn image(http: Client, context: Arc<Context>, id: &str) -> Result<String> {
+    let resp = imgur_get(&http, &context.config, &format!("image/{}", id)).await?;
     render_image(resp)
 }
 
@@ -63,8 +65,8 @@ fn push_sfw(title: &mut String, data: &Value) {
     });
 }
 
-pub async fn gallery<W: Webs>(webs: &W, id: &str) -> Result<String> {
-    let resp = imgur_get(webs.client(), webs.config(), &format!("album/{}", id)).await?;
+pub async fn gallery(http: Client, context: Arc<Context>, id: &str) -> Result<String> {
+    let resp = imgur_get(&http, &context.config, &format!("album/{}", id)).await?;
     render_gallery(resp)
 }
 

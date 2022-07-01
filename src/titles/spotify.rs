@@ -1,30 +1,26 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
+use reqwest::Client;
 use serde::Deserialize;
 
 use super::youtube::major_duration_unit;
 use crate::webs::spotify_get;
-use crate::webs::Webs;
+use crate::webs::Context;
 
 lazy_static! {
     static ref URL_STRIPPER: Regex = Regex::new("cid=[a-f0-9]{30,34}").unwrap();
 }
 
-pub async fn anything<W: Webs>(webs: &W, kind: &str, id: &str) -> Result<String> {
+pub async fn anything(http: Client, context: Arc<Context>, kind: &str, id: &str) -> Result<String> {
     // lol
     let api_name = format!("{}s", kind);
 
-    let res = spotify_get(
-        webs.client(),
-        webs.config(),
-        webs.state(),
-        &format!("{}/{}", api_name, id),
-    )
-    .await?;
+    let res = spotify_get(&http, context, &format!("{}/{}", api_name, id)).await?;
     Ok(match kind {
         "track" => render_track(&serde_json::from_value(res)?),
         _ => serde_json::to_string(&res)?,

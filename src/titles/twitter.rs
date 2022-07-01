@@ -1,15 +1,16 @@
 use anyhow::format_err;
 use anyhow::Result;
+use reqwest::Client;
 use serde_json::Value;
+use std::sync::Arc;
 
 use crate::webs::twitter_get;
-use crate::webs::Webs;
+use crate::webs::Context;
 
-pub async fn tweet<W: Webs>(webs: &W, id: &str) -> Result<String> {
+pub async fn tweet(http: Client, context: Arc<Context>, id: &str) -> Result<String> {
     let resp = twitter_get(
-        webs.client(),
-        webs.config(),
-        webs.state(),
+        &http,
+        context,
         &format!("1.1/statuses/show.json?id={}&tweet_mode=extended", id),
     )
     .await?;

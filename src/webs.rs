@@ -1,10 +1,10 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time;
 
 use anyhow::bail;
 use anyhow::format_err;
-use anyhow::Context;
+use anyhow::Context as _;
 use anyhow::Result;
 use maplit::hashmap;
 use reqwest::Client;
@@ -13,61 +13,26 @@ use serde_json::Value;
 
 use crate::config::Config;
 
-pub trait Webs {
-    fn client(&self) -> &Client;
-    fn config(&self) -> &Config;
-    fn state(&self) -> &State;
+pub struct Context {
+    pub config: Config,
+    pub state: State,
 }
 
-pub struct Internet {
-    client: Client,
-    config: Config,
-    state: State,
-}
-
-impl Webs for Internet {
-    fn client(&self) -> &Client {
-        &self.client
-    }
-
-    fn config(&self) -> &Config {
-        &self.config
-    }
-
-    fn state(&self) -> &State {
-        &self.state
-    }
-}
-
-pub struct Explode;
-
-impl Webs for Explode {
-    fn client(&self) -> &Client {
-        unimplemented!()
-    }
-
-    fn config(&self) -> &Config {
-        unimplemented!()
-    }
-
-    fn state(&self) -> &State {
-        unimplemented!()
-    }
-}
-
-impl Internet {
-    pub fn new(config: Config) -> Internet {
+impl Context {
+    pub fn new(config: Config) -> (Client, Context) {
         let ua = chrome_ua();
         info!("UA: {}", ua);
         let client = reqwest::ClientBuilder::new()
             .user_agent(ua)
             .build()
             .expect("infallible");
-        Internet {
+        (
             client,
-            config,
-            state: State::default(),
-        }
+            Context {
+                config,
+                state: State::default(),
+            },
+        )
     }
 }
 
@@ -105,45 +70,61 @@ pub async fn imgur_get(client: &Client, config: &Config, sub: &str) -> Result<Va
     Ok(resp.json().await.context("bad json from imgur")?)
 }
 
-pub async fn twitter_get(
-    client: &Client,
-    config: &Config,
-    state: &State,
-    sub: &str,
-) -> Result<Value> {
-    if state.twitter_token.borrow().is_none() {
-        state.update_twitter_token(client, config).await?;
+pub async fn twitter_get(client: &Client, context: Arc<Context>, sub: &str) -> Result<Value> {
+    if context
+        .state
+        .twitter_token
+        .lock()
+        .expect("poisoned")
+        .is_none()
+    {
+        context
+            .state
+            .update_twitter_token(client, &context.config)
+            .await?;
     }
+    let token = context
+        .state
+        .twitter_token
+        .lock()
+        .expect("poisoned")
+        .clone()
+        .expect("populated above");
     let resp = errors(
         client
             .get(&format!("https://api.twitter.com/{}", sub))
-            .header(
-                "Authorization",
-                &state.twitter_token.borrow().clone().unwrap(),
-            )
+            .header("Authorization", &token)
             .send()
             .await?,
     )?;
     Ok(resp.json().await.context("bad json from twitter")?)
 }
 
-pub async fn spotify_get(
-    client: &Client,
-    config: &Config,
-    state: &State,
-    sub: &str,
-) -> Result<Value> {
-    if state.spotify_token.borrow().is_none() {
-        state.update_spotify_token(client, config).await?;
+pub async fn spotify_get(client: &Client, context: Arc<Context>, sub: &str) -> Result<Value> {
+    if context
+        .state
+        .spotify_token
+        .lock()
+        .expect("poisoned")
+        .is_none()
+    {
+        context
+            .state
+            .update_spotify_token(client, &context.config)
+            .await?;
     }
     let url = format!("https://api.spotify.com/v1/{}", sub);
+    let token = context
+        .state
+        .spotify_token
+        .lock()
+        .expect("poisoned")
+        .clone()
+        .expect("populated above");
     let resp = errors(
         client
             .get(&url)
-            .header(
-                "Authorization",
-                &state.spotify_token.borrow().clone().unwrap(),
-            )
+            .header("Authorization", &token)
             .send()
             .await
             .with_context(|| format_err!("network fetching {:?}", url))?,
@@ -175,8 +156,8 @@ pub async fn youtube_get(
 
 #[derive(Default)]
 pub struct State {
-    twitter_token: RefCell<Option<String>>,
-    spotify_token: RefCell<Option<String>>,
+    twitter_token: Mutex<Option<String>>,
+    spotify_token: Mutex<Option<String>>,
 }
 
 async fn oauth_token(client: &Client, url: &str, key: &str, secret: &str) -> Result<String> {
@@ -202,29 +183,34 @@ async fn oauth_token(client: &Client, url: &str, key: &str, secret: &str) -> Res
 
 impl State {
     async fn update_twitter_token(&self, client: &Client, config: &Config) -> Result<()> {
-        self.twitter_token.replace(Some(
-            oauth_token(
-                client,
-                "https://api.twitter.com/oauth2/token",
-                &config.keys.twitter_app_key,
-                &config.keys.twitter_app_secret,
-            )
-            .await?,
-        ));
+        let new_value = oauth_token(
+            client,
+            "https://api.twitter.com/oauth2/token",
+            &config.keys.twitter_app_key,
+            &config.keys.twitter_app_secret,
+        )
+        .await?;
+        self.twitter_token
+            .lock()
+            .expect("poisoned")
+            .replace(new_value);
 
         Ok(())
     }
 
     async fn update_spotify_token(&self, client: &Client, config: &Config) -> Result<()> {
-        self.spotify_token.replace(Some(
-            oauth_token(
-                client,
-                "https://accounts.spotify.com/api/token",
-                &config.keys.spotify_app_key,
-                &config.keys.spotify_app_secret,
-            )
-            .await?,
-        ));
+        let new_value = oauth_token(
+            client,
+            "https://accounts.spotify.com/api/token",
+            &config.keys.spotify_app_key,
+            &config.keys.spotify_app_secret,
+        )
+        .await?;
+
+        self.spotify_token
+            .lock()
+            .expect("poisoned")
+            .replace(new_value);
 
         Ok(())
     }
