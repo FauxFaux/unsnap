@@ -1,5 +1,4 @@
 use anyhow::Result;
-use cast::f64;
 use regex::bytes;
 
 use super::strip_whitespace;
@@ -34,7 +33,7 @@ pub async fn process<W: Webs>(webs: &W, url: &str) -> Result<String> {
     };
 
     let len = if buf.len() < PREVIEW_BYTES {
-        Some(f64(buf.len()))
+        Some(buf.len() as f64)
     } else if let Some(len) = content_length {
         Some(len)
     } else {
