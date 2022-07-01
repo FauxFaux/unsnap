@@ -97,12 +97,10 @@ fn hostname(url: &str) -> String {
 
 fn show_size(val: f64) -> String {
     use number_prefix::NumberPrefix;
-    use number_prefix::Prefixed;
-    use number_prefix::Standalone;
 
     match NumberPrefix::binary(val) {
-        Standalone(bytes) => format!("{} bytes", bytes),
-        Prefixed(prefix, n) => format!("{:.1}{}B", n, prefix),
+        NumberPrefix::Standalone(bytes) => format!("{} bytes", bytes),
+        NumberPrefix::Prefixed(prefix, n) => format!("{:.1}{}B", n, prefix),
     }
 }
 
