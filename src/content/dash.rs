@@ -5,12 +5,11 @@ pub fn highest_stream(playlist: &str) -> Result<String, &'static str> {
     let mut reader = quick_xml::Reader::from_str(playlist);
     let mut curr_bandwidth = None;
     let mut best = None;
-    let mut buf = Vec::new();
     let mut txt = String::new();
     let mut collect_text = false;
     loop {
-        match reader.read_event(&mut buf) {
-            Ok(Event::Start(ref e)) => match e.name() {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => match e.name().0 {
                 b"Representation" => {
                     curr_bandwidth = e.attributes().find_map(|a| a.ok().and_then(bandwidth));
                 }
@@ -23,10 +22,8 @@ pub fn highest_stream(playlist: &str) -> Result<String, &'static str> {
                 }
                 _ => (),
             },
-            Ok(Event::Text(ref e)) if collect_text => {
-                txt.push_str(&e.unescape_and_decode(&reader).unwrap())
-            }
-            Ok(Event::End(ref e)) => match e.name() {
+            Ok(Event::Text(ref e)) if collect_text => txt.push_str(&e.unescape().unwrap()),
+            Ok(Event::End(ref e)) => match e.name().0 {
                 b"Representation" => curr_bandwidth = None,
                 b"BaseURL" if collect_text => {
                     collect_text = false;
@@ -51,7 +48,7 @@ pub fn highest_stream(playlist: &str) -> Result<String, &'static str> {
 }
 
 fn bandwidth(a: Attribute) -> Option<u64> {
-    if a.key == b"bandwidth" {
+    if a.key.0 == b"bandwidth" {
         String::from_utf8_lossy(&a.value).parse().ok()
     } else {
         None
