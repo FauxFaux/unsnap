@@ -10,6 +10,8 @@ use subprocess::PopenConfig;
 use subprocess::Redirection;
 use tempfile::NamedTempFile;
 
+use crate::titles::cleanup_newlines;
+
 pub fn qalc(input: &str) -> Result<String> {
     let mut temp = NamedTempFile::new()?;
 
@@ -34,7 +36,9 @@ pub fn qalc(input: &str) -> Result<String> {
 
     if let Some(_exit) = child.wait_timeout(Duration::from_secs(1))? {
         let (output, _) = child.communicate(None)?;
-        Ok(output.ok_or_else(|| anyhow!("output requested"))?)
+        Ok(cleanup_newlines(
+            &output.ok_or_else(|| anyhow!("output requested"))?,
+        ))
     } else {
         child.kill()?;
         bail!("timeout, kill attempted");

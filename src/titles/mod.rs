@@ -114,7 +114,7 @@ fn strip_whitespace(text: &str) -> String {
     REPEATED_SPACE.replace_all(text, " ").to_string()
 }
 
-fn cleanup_newlines(text: &str) -> String {
+pub fn cleanup_newlines(text: &str) -> String {
     let text = text.trim();
     let text = text.replace(|c: char| c.is_control(), " ¶ ");
     let text = CHAINED_NEWLINES.replace_all(&text, " ¶ ");
