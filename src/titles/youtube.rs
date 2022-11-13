@@ -48,7 +48,7 @@ fn render_video(resp: Value) -> Result<String> {
     Ok(format!(
         "{} {} ፤ [{}] ፤ {}",
         major_duration_unit(&duration),
-        published.date().naive_local(),
+        published.date_naive(),
         channel_title,
         title
     ))
