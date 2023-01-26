@@ -4,9 +4,10 @@ extern crate log;
 mod config;
 mod content;
 mod danger;
-mod files;
 mod titles;
 mod webs;
+
+use std::fs;
 
 use anyhow::format_err;
 use anyhow::Context as _;
@@ -22,7 +23,7 @@ use crate::webs::Context;
 async fn main() -> Result<()> {
     pretty_env_logger::try_init()?;
 
-    let config: config::Config = toml::from_slice(&files::load_bytes("bot.toml")?)?;
+    let config: config::Config = toml::from_str(&fs::read_to_string("bot.toml")?)?;
 
     let irc_config = ic::Config {
         nickname: Some(config.server.nick.to_string()),
