@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::time;
 
@@ -101,36 +102,69 @@ pub async fn twitter_get(client: &Client, context: Arc<Context>, sub: &str) -> R
 }
 
 pub async fn spotify_get(client: &Client, context: Arc<Context>, sub: &str) -> Result<Value> {
-    if context
-        .state
-        .spotify_token
-        .lock()
-        .expect("poisoned")
-        .is_none()
-    {
-        context
-            .state
-            .update_spotify_token(client, &context.config)
-            .await?;
+    // I think this is the worst threading code I've ever written.
+
+    for retry in [true, false] {
+        let token = maybe_refresh(client, &context).await?;
+
+        let url = format!("https://api.spotify.com/v1/{}", sub);
+
+        let resp = client
+            .get(&url)
+            .header("Authorization", &token)
+            .send()
+            .await
+            .with_context(|| format_err!("network fetching {:?}", url))?;
+
+        if resp.status().is_success() {
+            return Ok(resp.json().await.context("bad json from spotify")?);
+        }
+
+        if resp.status().as_u16() == 401 {
+            clear_token(&context);
+            continue;
+        }
+
+        if !retry {
+            bail!("spotify replied: {:?}", resp.status());
+        }
     }
-    let url = format!("https://api.spotify.com/v1/{}", sub);
+
+    unreachable!("out of spotify retries")
+}
+
+async fn maybe_refresh(client: &Client, context: &Arc<Context>) -> Result<String> {
     let token = context
         .state
         .spotify_token
         .lock()
         .expect("poisoned")
-        .clone()
-        .expect("populated above");
-    let resp = errors(
-        client
-            .get(&url)
-            .header("Authorization", &token)
-            .send()
-            .await
-            .with_context(|| format_err!("network fetching {:?}", url))?,
-    )
-    .with_context(|| format_err!("status fetching {:?}", url))?;
-    Ok(resp.json().await.context("bad json from spotify")?)
+        .deref()
+        .clone();
+
+    Ok(match token {
+        None => {
+            let new_value = State::fetch_spotify_token(client, &context).await?;
+            context
+                .state
+                .spotify_token
+                .lock()
+                .expect("poisoned")
+                .replace(new_value.clone());
+            new_value
+        }
+        Some(value) => value.clone(),
+    })
+}
+
+fn clear_token(context: &Arc<Context>) {
+    let _ = context
+        .state
+        .spotify_token
+        .lock()
+        .expect("poisoned")
+        // take() meaning clear()
+        .take();
 }
 
 pub async fn youtube_get(
@@ -198,21 +232,16 @@ impl State {
         Ok(())
     }
 
-    async fn update_spotify_token(&self, client: &Client, config: &Config) -> Result<()> {
+    async fn fetch_spotify_token(client: &Client, context: &Arc<Context>) -> Result<String> {
         let new_value = oauth_token(
             client,
             "https://accounts.spotify.com/api/token",
-            &config.keys.spotify_app_key,
-            &config.keys.spotify_app_secret,
+            &context.config.keys.spotify_app_key,
+            &context.config.keys.spotify_app_secret,
         )
         .await?;
 
-        self.spotify_token
-            .lock()
-            .expect("poisoned")
-            .replace(new_value);
-
-        Ok(())
+        Ok(new_value)
     }
 }
 
