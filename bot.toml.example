@@ -1,5 +1,5 @@
 [server]
-hostname = "irc.freenode.net"
+hostname = "irc.libera.chat"
 nick = "unsnap"
 channels = ["#unsnap"]
 
