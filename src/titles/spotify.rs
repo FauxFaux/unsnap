@@ -21,9 +21,11 @@ pub async fn anything(http: Client, context: Arc<Context>, kind: &str, id: &str)
     let api_name = format!("{}s", kind);
 
     let res = spotify_get(&http, context, &format!("{}/{}", api_name, id)).await?;
+    let full = serde_json::to_string(&res)?;
+    info!("full spotify response for {kind} {id}: {full}");
     Ok(match kind {
         "track" => render_track(&serde_json::from_value(res)?),
-        _ => serde_json::to_string(&res)?,
+        _ => full,
     })
 }
 
