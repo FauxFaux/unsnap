@@ -22,7 +22,9 @@ pub fn highest_stream(playlist: &str) -> Result<String, &'static str> {
                 }
                 _ => (),
             },
-            Ok(Event::Text(ref e)) if collect_text => txt.push_str(&e.unescape().unwrap()),
+            Ok(Event::Text(ref e)) if collect_text => {
+                txt.push_str(&e.decode().expect("xml decode error"))
+            }
             Ok(Event::End(ref e)) => match e.name().0 {
                 b"Representation" => curr_bandwidth = None,
                 b"BaseURL" if collect_text => {
