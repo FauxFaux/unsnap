@@ -1,5 +1,5 @@
-use quick_xml::events::attributes::Attribute;
 use quick_xml::events::Event;
+use quick_xml::events::attributes::Attribute;
 
 pub fn highest_stream(playlist: &str) -> Result<String, &'static str> {
     let mut reader = quick_xml::Reader::from_str(playlist);

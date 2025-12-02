@@ -3,10 +3,10 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::time;
 
-use anyhow::bail;
-use anyhow::format_err;
 use anyhow::Context as _;
 use anyhow::Result;
+use anyhow::bail;
+use anyhow::format_err;
 use maplit::hashmap;
 use reqwest::Client;
 use reqwest::Response;

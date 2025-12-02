@@ -3,7 +3,7 @@ name = "unsnap"
 version = "0.1.0"
 authors = ["Chris West (Faux) <git@goeswhere.com>"]
 
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 anyhow = "1"

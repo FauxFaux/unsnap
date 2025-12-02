@@ -2,9 +2,9 @@ use std::ffi::OsString;
 use std::io::Write;
 use std::time::Duration;
 
+use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
-use anyhow::Result;
 use subprocess::Popen;
 use subprocess::PopenConfig;
 use subprocess::Redirection;

@@ -1,16 +1,16 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use chrono::DateTime;
 use maplit::hashmap;
 use reqwest::Client;
 use serde_json::Value;
 use time_parse::duration;
 
-use crate::webs::youtube_get;
 use crate::webs::Context;
+use crate::webs::youtube_get;
 
 pub async fn video(http: Client, context: Arc<Context>, id: &str) -> Result<String> {
     let resp = youtube_get(
@@ -81,9 +81,11 @@ mod tests {
     fn aiweechoo() {
         assert_eq!(
             "5m 2013-03-08 ፤ [shoopfex] ፤ Platinum Level Circulation (Avicii x Tsukihi Araragi x Nadeko Sengoku)",
-            super::render_video(serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json")).unwrap())
-                .unwrap()
-                .as_str()
+            super::render_video(
+                serde_json::from_str(include_str!("../../tests/youtube-aiweechoo.json")).unwrap()
+            )
+            .unwrap()
+            .as_str()
         )
     }
 }

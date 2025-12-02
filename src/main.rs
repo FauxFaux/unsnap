@@ -9,11 +9,11 @@ mod webs;
 
 use std::fs;
 
-use anyhow::format_err;
 use anyhow::Context as _;
 use anyhow::Result;
+use anyhow::format_err;
 use futures::prelude::*;
-use irc::client::{prelude as ic, Sender};
+use irc::client::{Sender, prelude as ic};
 use reqwest::Client;
 use std::sync::Arc;
 

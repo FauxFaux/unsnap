@@ -9,8 +9,8 @@ use reqwest::Client;
 use serde::Deserialize;
 
 use super::youtube::major_duration_unit;
-use crate::webs::spotify_get;
 use crate::webs::Context;
+use crate::webs::spotify_get;
 
 lazy_static! {
     static ref URL_STRIPPER: Regex = Regex::new("cid=[a-f0-9]{30,34}").unwrap();
@@ -86,8 +86,8 @@ struct SpotifyArtist {
 
 #[cfg(test)]
 mod test {
-    use super::render_track;
     use super::SpotifyTrack;
+    use super::render_track;
 
     #[test]
     fn json() {

@@ -1,12 +1,12 @@
-use anyhow::format_err;
 use anyhow::Result;
+use anyhow::format_err;
 use reqwest::Client;
 use serde_json::Value;
 use std::sync::Arc;
 
 use crate::titles::show_size;
-use crate::webs::imgur_get;
 use crate::webs::Context;
+use crate::webs::imgur_get;
 
 pub async fn image(http: Client, context: Arc<Context>, id: &str) -> Result<String> {
     let resp = imgur_get(&http, &context.config, &format!("image/{}", id)).await?;
